@@ -9,45 +9,56 @@ import (
 	"net/url"
 )
 
+const key = "6dae91b720b11ea188190cfe41708199"
+
+type WeatherData struct {
+	//TODO
+}
+
 func GetWeather(ctx *fiber.Ctx) error {
 	//ctx.Set(fiber.HeaderContentType, fiber.MIMETextPlainCharsetUTF8)
 
 	client := &http.Client{}
-
 	queryParams := url.Values{}
-	queryParams.Add("datasetid", "GHCND")
-	queryParams.Add("locationid", "CITY:PO0001")
-	queryParams.Add("datatypeid", "TAVG")
-	queryParams.Add("startdate", "2023-02-01")
-	queryParams.Add("enddate", "2023-02-23")
+	queryParams.Add("q", "Lisbon")
+	queryParams.Add("units", "metric")
+	queryParams.Add("APPID", key)
 
-	req, err := http.NewRequest("GET", "https://www.ncdc.noaa.gov/cdo-web/data?", nil)
+	apiUrl := fmt.Sprintf("https://api.openweathermap.org/data/2.5/weather?%s", queryParams.Encode())
+
+	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
-	req.Header.Set("token", "rPcrJuGpkVueOJWXdUfoeRweXVVAbLUT")
-	req.URL.RawQuery = queryParams.Encode()
-	println(req.URL.Path)
-	println(req.URL.RawQuery)
-	//datasetid=GHCND&locationid=ZIP:28801&startdate=2010-05-01&enddate=2010-05-01
-	//req.Header.Set("datasetid", "GHCND")
-	//req.Header.Set("locationid", "ZIP:28801")
-	//req.Header.Set("startdate", time.Now().Format("02-Jan-2006"))
-	//req.Header.Set("enddate", time.Now().Format("02-Jan-2006"))
 
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	defer resp.Body.Close() //in order to avoid leaks
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body) //in order to avoid leaks
 
 	r, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 	fmt.Println(string(r))
-	ctx.Send(r)
+	err = ctx.Send(r)
+	if err != nil {
+		return err
+	}
+
+	fmt.Sprintf("%s", r)
+
 	return nil
+}
+
+// processData
+func processData(data []byte) {
+
 }
