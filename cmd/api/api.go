@@ -1,4 +1,4 @@
-package RESTful_Weather_API_
+package main
 
 import (
 	"fmt"
