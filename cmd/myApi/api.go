@@ -1,4 +1,4 @@
-package main
+package myApi
 
 import (
 	"fmt"
@@ -15,12 +15,12 @@ type WeatherData struct {
 	//TODO
 }
 
-func GetWeather(ctx *fiber.Ctx) error {
+func GetWeather(ctx *fiber.Ctx, city string) (string, error) {
 	//ctx.Set(fiber.HeaderContentType, fiber.MIMETextPlainCharsetUTF8)
 
 	client := &http.Client{}
 	queryParams := url.Values{}
-	queryParams.Add("q", "Lisbon")
+	queryParams.Add("q", city)
 	queryParams.Add("units", "metric")
 	queryParams.Add("APPID", key)
 
@@ -50,12 +50,10 @@ func GetWeather(ctx *fiber.Ctx) error {
 	fmt.Println(string(r))
 	err = ctx.Send(r)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	fmt.Sprintf("%s", r)
-
-	return nil
+	return string(r), nil
 }
 
 // processData

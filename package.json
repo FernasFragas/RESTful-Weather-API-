@@ -1,9 +1,0 @@
-{
-  "name": "RESTful-Weather-API-",
-  "version": "1.0.0",
-  "dependencies": {
-    "express": "^4.18.2",
-    "hbs": "^4.2.0",
-    "node-fetch": "^2.6.6"
-  }
-}
