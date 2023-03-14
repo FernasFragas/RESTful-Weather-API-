@@ -21,12 +21,12 @@ func main() {
 	})
 
 	app.Post("/process-form", func(ctx *fiber.Ctx) error {
-		city := ctx.FormValue("CityName")
+		city := ctx.FormValue("CityName") // retrieves the name passed in the form
 		data, err := myApi.GetWeather(ctx, city)
 		if err != nil {
 			return err
 		}
-		return ctx.Render("index", data)
+		return ctx.Render("index", data) // links the data retrieved from the API and connects it to the html file
 	})
 
 	err := app.Listen(port)

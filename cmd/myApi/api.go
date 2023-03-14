@@ -15,8 +15,16 @@ type WeatherData struct {
 	//TODO
 }
 
+// GetWeather retrieves the weather data for the city
+// Parameters:
+//
+//	ctx: pointer to the fiber context object
+//	city: string representing the name of the city to get the weather for
+//
+// Returns:
+//
+//	A string containing the weather information for the given city, or an error if there was a problem
 func GetWeather(ctx *fiber.Ctx, city string) (string, error) {
-	//ctx.Set(fiber.HeaderContentType, fiber.MIMETextPlainCharsetUTF8)
 
 	client := &http.Client{}
 	queryParams := url.Values{}
@@ -24,30 +32,35 @@ func GetWeather(ctx *fiber.Ctx, city string) (string, error) {
 	queryParams.Add("units", "metric")
 	queryParams.Add("APPID", key)
 
+	// creates a string with the url used to do http request
 	apiUrl := fmt.Sprintf("https://api.openweathermap.org/data/2.5/weather?%s", queryParams.Encode())
 
 	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
 		log.Fatal(err.Error())
+		return "", err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err.Error())
+		return "", err
 	}
 
-	defer func(Body io.ReadCloser) {
+	// this is an anonymous function that takes a single parameter of type io.ReadCloser, named Body
+	defer func(Body io.ReadCloser) { // schedules the enclosed function to be called at the end of the current function
 		err := Body.Close()
 		if err != nil {
-
+			log.Fatal(err.Error())
 		}
-	}(resp.Body) //in order to avoid leaks
+		// closes the anonymous function and passes the resp.Body variable as the parameter for the Body parameter in the function
+	}(resp.Body)
 
 	r, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	fmt.Println(string(r))
+	log.Println(string(r))
 	err = ctx.Send(r)
 	if err != nil {
 		return "", err
