@@ -21,7 +21,7 @@ import (
 // Returns:
 //
 //	A string containing the weather information for the given city, or an error if there was a problem
-func GetWeather(ctx *fiber.Ctx, city string) (string, error) {
+func GetWeather(ctx *fiber.Ctx, city string, weather *WeatherData) error {
 	err := godotenv.Load("local.env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -41,13 +41,13 @@ func GetWeather(ctx *fiber.Ctx, city string) (string, error) {
 	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
 		log.Fatal(err.Error())
-		return "", err
+		return err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err.Error())
-		return "", err
+		return err
 	}
 
 	// this is an anonymous function that takes a single parameter of type io.ReadCloser, named Body
@@ -66,19 +66,12 @@ func GetWeather(ctx *fiber.Ctx, city string) (string, error) {
 
 	err = ctx.Send(r)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	var weather WeatherData
 	marshalError := json.Unmarshal(r, &weather)
 	if marshalError != nil {
-		return "", marshalError
+		return marshalError
 	}
-	log.Println(weather)
-	return string(r), nil
-}
-
-// processData
-func processData(data []byte) {
-
+	return nil
 }
