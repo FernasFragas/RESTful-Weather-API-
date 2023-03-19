@@ -1,19 +1,16 @@
 package myApi
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 )
-
-const key = "6dae91b720b11ea188190cfe41708199"
-
-type WeatherData struct {
-	//TODO
-}
 
 // GetWeather retrieves the weather data for the city
 // Parameters:
@@ -25,6 +22,12 @@ type WeatherData struct {
 //
 //	A string containing the weather information for the given city, or an error if there was a problem
 func GetWeather(ctx *fiber.Ctx, city string) (string, error) {
+	err := godotenv.Load("local.env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	key := os.Getenv("WEATHER_API_KEY")
 
 	client := &http.Client{}
 	queryParams := url.Values{}
@@ -60,12 +63,18 @@ func GetWeather(ctx *fiber.Ctx, city string) (string, error) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	log.Println(string(r))
+
 	err = ctx.Send(r)
 	if err != nil {
 		return "", err
 	}
 
+	var weather WeatherData
+	marshalError := json.Unmarshal(r, &weather)
+	if marshalError != nil {
+		return "", marshalError
+	}
+	log.Println(weather)
 	return string(r), nil
 }
 
