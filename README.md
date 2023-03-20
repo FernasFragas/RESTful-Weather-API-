@@ -4,7 +4,7 @@ Personal project to train my golang skills
 
 In this project I used Go to create a RESTful JSON Weather API
 It allows users to retrieve the current weather conditions and forecast for a given location.
-The API uses data from a weather service called
+The API uses data from a weather service called OpenWeather(https://openweathermap.org/)
 
 ### What is a RESTful API?
 - RESTful - Representational State Transfer
