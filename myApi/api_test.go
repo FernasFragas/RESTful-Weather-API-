@@ -1,6 +1,7 @@
 package myApi
 
 import (
+	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fasthttp"
@@ -25,12 +26,17 @@ func Test_GetWeather(t *testing.T) {
 
 	LoadEnvKey(&key, "./../local.env")
 
-	var data WeatherData
-	err := GetWeather(ctx, "Lisbon", &data, key)
+	var data []byte
+	err := GetWeather("Lisbon", &data, key)
 	if err != nil {
 		log.Fatal("Error ", err.Error())
 	}
+	var weather WeatherData
+	marshalError := json.Unmarshal(data, &weather)
+	if marshalError != nil {
+		log.Fatal(marshalError.Error())
+	}
 
-	assert.Equal(t, "Lisbon", data.Name)
-	assert.Equal(t, "PT", data.Sys.Country)
+	assert.Equal(t, "Lisbon", weather.Name)
+	assert.Equal(t, "PT", weather.Sys.Country)
 }

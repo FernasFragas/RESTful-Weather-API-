@@ -21,7 +21,7 @@ import (
 // Returns:
 //
 //	A string containing the weather information for the given city, or an error if there was a problem
-func GetWeather(ctx *fiber.Ctx, city string, weather *WeatherData, key string) error {
+func GetWeather(city string, respByte *[]byte, key string) error {
 	client := &http.Client{}
 	queryParams := url.Values{}
 	queryParams.Add("q", city)
@@ -57,7 +57,12 @@ func GetWeather(ctx *fiber.Ctx, city string, weather *WeatherData, key string) e
 		log.Fatal(err.Error())
 	}
 
-	err = ctx.Send(r)
+	*respByte = r
+	return nil
+}
+
+func SendRespToClientUnmarshalData(ctx *fiber.Ctx, weather *WeatherData, r []byte) error {
+	err := ctx.Send(r)
 	if err != nil {
 		return err
 	}

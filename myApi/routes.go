@@ -16,8 +16,10 @@ func SetRoutes(app *fiber.App) {
 
 	app.Post("/process-form/:CityName", func(ctx *fiber.Ctx) error {
 		city := ctx.FormValue("CityName") // retrieves the name passed in the form
+		var response []byte
+		err := GetWeather(city, &response, key)
 		var weather WeatherData
-		err := GetWeather(ctx, city, &weather, key)
+		SendRespToClientUnmarshalData(ctx, &weather, response)
 		if err != nil {
 			return err
 		}
