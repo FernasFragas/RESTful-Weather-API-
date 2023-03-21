@@ -21,14 +21,7 @@ import (
 // Returns:
 //
 //	A string containing the weather information for the given city, or an error if there was a problem
-func GetWeather(ctx *fiber.Ctx, city string, weather *WeatherData) error {
-	err := godotenv.Load("local.env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	key := os.Getenv("WEATHER_API_KEY")
-
+func GetWeather(ctx *fiber.Ctx, city string, weather *WeatherData, key string) error {
 	client := &http.Client{}
 	queryParams := url.Values{}
 	queryParams.Add("q", city)
@@ -74,4 +67,13 @@ func GetWeather(ctx *fiber.Ctx, city string, weather *WeatherData) error {
 		return marshalError
 	}
 	return nil
+}
+
+func LoadEnvKey(key *string, path string) {
+	err := godotenv.Load(path)
+	if err != nil {
+		log.Fatal("Error loading .env file", err.Error())
+	}
+
+	*key = os.Getenv("WEATHER_API_KEY")
 }

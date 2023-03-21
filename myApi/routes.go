@@ -10,10 +10,14 @@ func SetRoutes(app *fiber.App) {
 		return ctx.Render("index", nil)
 	})
 
+	var key string
+
+	LoadEnvKey(&key, "local.env")
+
 	app.Post("/process-form/:CityName", func(ctx *fiber.Ctx) error {
 		city := ctx.FormValue("CityName") // retrieves the name passed in the form
 		var weather WeatherData
-		err := GetWeather(ctx, city, &weather)
+		err := GetWeather(ctx, city, &weather, key)
 		if err != nil {
 			return err
 		}
