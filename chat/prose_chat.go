@@ -13,8 +13,8 @@ func GetLocationFromChat(userInput string) string {
 
 	var location string
 
-	for _, entity := range doc.Entities() {
-		if entity.Label == "GPE" {
+	for _, entity := range doc.Tokens() {
+		if entity.Label == "B-GPE" {
 			location = entity.Text
 			break
 		}
