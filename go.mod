@@ -1,4 +1,4 @@
-module RESTful-Weather-API-
+module restful_api_weather
 
 go 1.19
 

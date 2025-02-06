@@ -1,10 +1,11 @@
-package myApi
+package restful_api_weather_test
 
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fasthttp"
 	"log"
+	"restful_api_weather"
 	"testing"
 )
 
@@ -25,8 +26,8 @@ func Test_GetWeather(t *testing.T) {
 
 	LoadEnvKey(&key, "./../local.env")
 
-	var data WeatherData
-	err := GetWeather(ctx, "Lisbon", &data, key)
+	var data restful_api_weather.WeatherData
+	err := restful_api_weather.GetWeather(ctx, "Lisbon", &data, key)
 	if err != nil {
 		log.Fatal("Error ", err.Error())
 	}

@@ -15,3 +15,5 @@ The API uses data from a weather service called OpenWeather(https://openweatherm
 - uses HTTP methods GET, POST, PUT, and DELETE to perform operations on resources.
 - uses HTTP status codes
 - Is stateless, meaning that each request is independent and does not depend on the state of the server or previous requests.
+
+### Application Design
