@@ -1,0 +1,6 @@
+.weather-card {
+    max-width: 400px;
+    margin: auto;
+    text-align: center;
+    font-size: 1.2rem;
+}
