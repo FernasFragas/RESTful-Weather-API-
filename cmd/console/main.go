@@ -13,7 +13,7 @@ func main() {
 
 	var key string
 
-	LoadEnvKey(&key, "local.env")
+	LoadEnvKey()
 
 	weatherService := restful_api_weather.NewWeatherService(restful_api_weather.NewWeatherAPI(key), nil /*console to log*/)
 

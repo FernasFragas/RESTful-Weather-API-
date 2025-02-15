@@ -1,6 +1,5 @@
-package restful_api_weather
-
-//This comunicates with that specific api
+// Package openweather package provides a simple API to fetch weather reports for a given city.
+package openweather
 
 import (
 	"context"
@@ -8,6 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
+
+	"weatherservice"
 )
 
 const openWeatherMapWebhookURL = "https://api.openweathermap.org/data/2.5/weather?"
@@ -20,11 +22,16 @@ type WeatherAPI struct {
 
 func NewWeatherAPI(key string) *WeatherAPI {
 	return &WeatherAPI{
-		key: key,
+		client: http.DefaultClient,
+		key:    key,
 	}
 }
 
-func (api *WeatherAPI) FetchWeatherReport(ctx context.Context, city string) (*Weather, error) {
+func (api *WeatherAPI) FetchWeatherReport(ctx context.Context, city string) (*weatherservice.Weather, error) {
+	if api.client == nil {
+		return nil, fmt.Errorf("client not initialized")
+	}
+
 	queryParams := url.Values{}
 	queryParams.Add("q", city)
 	queryParams.Add("units", "metric")
@@ -41,47 +48,52 @@ func (api *WeatherAPI) FetchWeatherReport(ctx context.Context, city string) (*We
 		_ = resp.Body.Close()
 	}()
 
-	var weather WeatherData
+	var weather weatherData
 
 	err = json.NewDecoder(resp.Body).Decode(&weather)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Weather{
+	return &weatherservice.Weather{
 		City:        weather.Name,
-		Temperature: weather.Temperature.TempMax,
-		Wind:        0,
+		Temperature: weather.Temperature.Temperature,
+		FeelsLike:   weather.Temperature.FeelsLike,
+		Wind:        weather.Wind.Speed,
+		Humidity:    weather.Temperature.Humidity,
+		Condition:   weather.Weather[0].Description,
+		Country:     strings.ToLower(weather.Sys.Country),
 	}, nil
 }
 
 // unexported
-type WeatherData struct {
-	Weather     WeatherInfo `json:"weather"`
-	Temperature Temperature `json:"main"`
-	Wind        Wind        `json:"wind"`
-	Sys         Sys         `json:"sys"`
+type weatherData struct {
+	Weather     weatherInfo `json:"weather"`
+	Temperature temperature `json:"main"`
+	Wind        wind        `json:"wind"`
+	Sys         sys         `json:"sys"`
 	Name        string      `json:"name"`
 }
 
-type WeatherInfo []struct {
+type weatherInfo []struct {
 	WeatherState string `json:"main"`
 	Description  string `json:"description"`
 }
 
-type Temperature struct {
-	FeelsLike float64 `json:"feels_like"`
-	TempMin   float64 `json:"temp_min"`
-	TempMax   float64 `json:"tem_max"`
-	Humidity  float64 `json:"humidity"`
+type temperature struct {
+	Temperature float64 `json:"temp"`
+	FeelsLike   float64 `json:"feels_like"`
+	TempMin     float64 `json:"temp_min"`
+	TempMax     float64 `json:"tem_max"`
+	Humidity    float64 `json:"humidity"`
 }
 
-type Sys struct {
+type sys struct {
 	Country string  `json:"country"`
 	Sunrise float64 `json:"sunrise"`
 	Sunset  float64 `json:"sunset"`
 }
 
-type Wind struct {
+type wind struct {
 	Speed float64 `json:"speed"`
 }

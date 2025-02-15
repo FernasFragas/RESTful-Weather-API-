@@ -1,18 +1,17 @@
-package restful_api_weather_test
+package openweather_test
 
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fasthttp"
 	"log"
-	"restful_api_weather"
 	"testing"
+	"weatherservice"
+	"weatherservice/openweather"
 )
 
 func Test_LoadEnvKey(t *testing.T) {
-	var key string
-
-	LoadEnvKey(&key, "./../local.env")
+	key := weatherservice.LoadEnvKey()
 
 	assert.NotEmpty(t, key)
 }
@@ -22,16 +21,14 @@ func Test_GetWeather(t *testing.T) {
 	ctx := app.AcquireCtx(&fasthttp.RequestCtx{})
 	defer app.ReleaseCtx(ctx)
 
-	var key string
+	key := weatherservice.LoadEnvKey()
 
-	LoadEnvKey(&key, "./../local.env")
-
-	var data restful_api_weather.WeatherData
-	err := restful_api_weather.GetWeather(ctx, "Lisbon", &data, key)
+	op := openweather.NewWeatherAPI(key.OpenWeatherAPIKey)
+	data, err := op.FetchWeatherReport(ctx.Context(), "Lisbon")
 	if err != nil {
 		log.Fatal("Error ", err.Error())
 	}
 
-	assert.Equal(t, "Lisbon", data.Name)
-	assert.Equal(t, "PT", data.Sys.Country)
+	assert.Equal(t, "Lisbon", data.City)
+	assert.Equal(t, "PT", data.Country)
 }

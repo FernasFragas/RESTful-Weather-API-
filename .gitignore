@@ -22,4 +22,4 @@ pkg/
 .DS_Store
 Thumbs.db
 
-local.env
+.env
