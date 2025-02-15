@@ -1,4 +1,4 @@
-package main
+package weatherservice
 
 import (
 	"github.com/joho/godotenv"
@@ -19,7 +19,7 @@ type MateoMaticsSecrets struct {
 func LoadEnvKey() (weatherServiceKeys *WeatherServiceKeys) {
 	weatherServiceKeys = &WeatherServiceKeys{}
 
-	err := godotenv.Load("local.env")
+	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file", err.Error())
 	}

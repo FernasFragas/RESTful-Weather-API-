@@ -2,16 +2,16 @@ package weatherservice
 
 import "context"
 
-type InfoDataProvider[T any] struct {
+type ReportData[T any] struct {
 	Data T
 }
 
-type InfoProvider[T any] interface {
-	FetchWeatherReport(ctx context.Context, city string) (*InfoDataProvider[T], error)
+type ReporterProvider[T any] interface {
+	FetchReportData(ctx context.Context, city string) (*ReportData[T], error)
 }
 
-type InfoPublisher[T any] interface {
-	PublishWeatherReport(ctx context.Context, weather *InfoDataProvider[T]) error
+type ReporterPublisher[T any] interface {
+	PublishReportData(ctx context.Context, weather *ReportData[T]) error
 }
 
 type Weather struct {
@@ -24,20 +24,20 @@ type Weather struct {
 	Country     string
 }
 
-type WeatherService struct {
-	api InfoProvider[Weather]
-	pub InfoPublisher[Weather]
+type WeatherReporter struct {
+	api ReporterProvider[Weather]
+	pub ReporterPublisher[Weather]
 }
 
-func NewWeatherService(api InfoProvider[Weather], pub InfoPublisher[Weather]) *WeatherService {
-	return &WeatherService{
+func NewWeatherReporter(api ReporterProvider[Weather], pub ReporterPublisher[Weather]) *WeatherReporter {
+	return &WeatherReporter{
 		api: api,
 		pub: pub,
 	}
 }
 
-func (s *WeatherService) GetWeatherReport(ctx context.Context, city string) (*InfoDataProvider[Weather], error) {
-	return s.api.FetchWeatherReport(ctx, city)
+func (s *WeatherReporter) GetReport(ctx context.Context, city string) (*ReportData[Weather], error) {
+	return s.api.FetchReportData(ctx, city)
 }
 
 type Waves struct {
@@ -45,18 +45,18 @@ type Waves struct {
 	Period float64
 }
 
-type WavesService struct {
-	api InfoProvider[Waves]
-	pub InfoPublisher[Waves]
+type WavesReporter struct {
+	api ReporterProvider[Waves]
+	pub ReporterPublisher[Waves]
 }
 
-func NewWavesService(api InfoProvider[Waves], pub InfoPublisher[Waves]) *WavesService {
-	return &WavesService{
+func NewWavesReporter(api ReporterProvider[Waves], pub ReporterPublisher[Waves]) *WavesReporter {
+	return &WavesReporter{
 		api: api,
 		pub: pub,
 	}
 }
 
-func (s *WavesService) GetWavesReport(ctx context.Context, city string) (*InfoDataProvider[Waves], error) {
-	return s.api.FetchWeatherReport(ctx, city)
+func (s *WavesReporter) GetReport(ctx context.Context, city string) (*ReportData[Waves], error) {
+	return s.api.FetchReportData(ctx, city)
 }

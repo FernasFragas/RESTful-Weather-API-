@@ -1,4 +1,4 @@
-package openweather_test
+package weatherservice
 
 import (
 	"github.com/gofiber/fiber/v2"
@@ -6,12 +6,10 @@ import (
 	"github.com/valyala/fasthttp"
 	"log"
 	"testing"
-	"weatherservice"
-	"weatherservice/openweather"
 )
 
 func Test_LoadEnvKey(t *testing.T) {
-	key := weatherservice.LoadEnvKey()
+	key := LoadEnvKey()
 
 	assert.NotEmpty(t, key)
 }
@@ -21,14 +19,14 @@ func Test_GetWeather(t *testing.T) {
 	ctx := app.AcquireCtx(&fasthttp.RequestCtx{})
 	defer app.ReleaseCtx(ctx)
 
-	key := weatherservice.LoadEnvKey()
+	key := LoadEnvKey()
 
-	op := openweather.NewWeatherAPI(key.OpenWeatherAPIKey)
+	op := NewWeatherAPI(key.OpenWeatherAPIKey)
 	data, err := op.FetchWeatherReport(ctx.Context(), "Lisbon")
 	if err != nil {
 		log.Fatal("Error ", err.Error())
 	}
 
 	assert.Equal(t, "Lisbon", data.City)
-	assert.Equal(t, "PT", data.Country)
+	assert.Equal(t, "pt", data.Country)
 }

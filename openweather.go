@@ -1,5 +1,5 @@
-// Package openweather package provides a simple API to fetch weather reports for a given city.
-package openweather
+// Package weatherservice package provides a simple API to fetch weather reports for a given city.
+package weatherservice
 
 import (
 	"context"
@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-
-	"weatherservice"
 )
 
 const openWeatherMapWebhookURL = "https://api.openweathermap.org/data/2.5/weather?"
@@ -27,7 +25,7 @@ func NewWeatherAPI(key string) *WeatherAPI {
 	}
 }
 
-func (api *WeatherAPI) FetchWeatherReport(ctx context.Context, city string) (*weatherservice.Weather, error) {
+func (api *WeatherAPI) FetchReportData(ctx context.Context, city string) (*ReportData[Weather], error) {
 	if api.client == nil {
 		return nil, fmt.Errorf("client not initialized")
 	}
@@ -55,14 +53,16 @@ func (api *WeatherAPI) FetchWeatherReport(ctx context.Context, city string) (*we
 		return nil, err
 	}
 
-	return &weatherservice.Weather{
-		City:        weather.Name,
-		Temperature: weather.Temperature.Temperature,
-		FeelsLike:   weather.Temperature.FeelsLike,
-		Wind:        weather.Wind.Speed,
-		Humidity:    weather.Temperature.Humidity,
-		Condition:   weather.Weather[0].Description,
-		Country:     strings.ToLower(weather.Sys.Country),
+	return &ReportData[Weather]{
+		Data: Weather{
+			City:        weather.Name,
+			Temperature: weather.Temperature.Temperature,
+			FeelsLike:   weather.Temperature.FeelsLike,
+			Wind:        weather.Wind.Speed,
+			Humidity:    weather.Temperature.Humidity,
+			Condition:   weather.Weather[0].Description,
+			Country:     strings.ToLower(weather.Sys.Country),
+		},
 	}, nil
 }
 

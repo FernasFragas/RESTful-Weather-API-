@@ -1,4 +1,4 @@
-module restful_api_weather
+module weatherservice
 
 go 1.19
 
@@ -7,6 +7,7 @@ require (
 	github.com/gofiber/template v1.7.5
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.7.0
+	github.com/valyala/fasthttp v1.44.0
 )
 
 require (
@@ -24,7 +25,6 @@ require (
 	github.com/savsgio/gotils v0.0.0-20220530130905-52f3993e8d6d // indirect
 	github.com/tinylib/msgp v1.1.6 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.44.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect

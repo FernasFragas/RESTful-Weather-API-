@@ -1,24 +1,31 @@
-package restful_api_weather
+package weatherservice
 
 import (
+	"context"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html"
 )
 
+type Reporter[T any] interface {
+	GetReport(ctx context.Context, city string) (*ReportData[T], error)
+}
+
 type Server struct {
 	app *fiber.App
 
-	service *WeatherService
+	weatherReporter *WeatherReporter
+	wavesReporter   *WavesReporter
 }
 
-func NewAppServer(s *WeatherService) *Server {
+func NewAppServer(wr *WeatherReporter, wvr *WavesReporter) *Server {
 	app := fiber.New(fiber.Config{
-		Views: html.New("./views", ".html"),
+		Views: html.New("./views", ".go.tpl"),
 	})
 
 	server := &Server{
-		app:     app,
-		service: s,
+		app:             app,
+		weatherReporter: wr,
+		wavesReporter:   wvr,
 	}
 
 	app.Get("/", func(ctx *fiber.Ctx) error {
@@ -37,10 +44,33 @@ func (s *Server) Listen(port string) error {
 func (s *Server) reportWeather(ctx *fiber.Ctx) error {
 	city := ctx.FormValue("city_name") // retrieves the name passed in the form
 
-	weatherdt, err := s.service.GetWeatherReport(ctx.Context(), city)
+	if city == "" {
+		return ctx.Status(fiber.StatusBadRequest).SendString("city name is empty")
+	}
+
+	weatherdt, err := s.weatherReporter.GetReport(ctx.Context(), city)
 	if err != nil {
 		return err
 	}
 
-	return ctx.Render("weather", weatherdt) // renders the weather.html file with the data retrieved from the API
+	ctx.Status(fiber.StatusOK)
+
+	return ctx.Render("index", map[string]interface{}{"Weather": weatherdt}) // renders the weather.html file with the data retrieved from the API
+}
+
+func (s *Server) reportWaves(ctx *fiber.Ctx) error {
+	city := ctx.FormValue("city_name") // retrieves the name passed in the form
+
+	if city == "" {
+		return ctx.Status(fiber.StatusBadRequest).SendString("city name is empty")
+	}
+
+	wavesdt, err := s.wavesReporter.GetReport(ctx.Context(), city)
+	if err != nil {
+		return err
+	}
+
+	ctx.Status(fiber.StatusOK)
+
+	return ctx.Render("index", map[string]interface{}{"Waves": wavesdt}) // renders the waves.html file with the data retrieved from the API
 }
