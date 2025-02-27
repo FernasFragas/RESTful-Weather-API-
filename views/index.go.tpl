@@ -49,18 +49,18 @@
     {{ if .Weather }}
         <div class="weather-card p-4 rounded shadow text-white">
             <h2>
-                {{ .Weather.City }}
-                <span class="fi fi-{{ .Weather.Country }}"></span>
+                {{ .Weather.Data.City }}
+                <span class="fi fi-{{ .Weather.Data.Country }}"></span>
             </h2>
-            <p><i class="bi bi-thermometer-half"></i> <strong>{{ .Weather.Temperature }}°C</strong></p>
-            <p><i class="bi bi-moisture"></i> Humidity: {{ .Weather.Humidity }}%</p>
-            <p><i class="bi bi-cloud"></i> {{ .Weather.Condition }}</p>
+            <p><i class="bi bi-thermometer-half"></i> <strong>{{ .Weather.Data.Temperature }}°C</strong></p>
+            <p><i class="bi bi-moisture"></i> Humidity: {{ .Weather.Data.Humidity }}%</p>
+            <p><i class="bi bi-cloud"></i> {{ .Weather.Data.Condition }}</p>
         </div>
     {{ end }}
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            let condition = "{{ .Weather.Condition }}".toLowerCase();
+            let condition = "{{ .Weather.Data.Condition }}".toLowerCase();
             let weatherCard = document.querySelector(".weather-card");
 
             if (weatherCard) {
