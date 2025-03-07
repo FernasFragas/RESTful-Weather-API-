@@ -1,14 +1,18 @@
-package weatherservice
+package api
 
+/*
 import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"weatherservice"
 )
 
 const mateoMaticsAuthenticationURL = "https://login.meteomatics.com/api/v1/token"
+const mateioMaticsAPIURL = "https://api.meteomatics.com"
 
 type MateoMaticAPI struct {
 	username string
@@ -77,6 +81,54 @@ func (api *MateoMaticAPI) getOAuthToken() error {
 
 }
 
-func (api *MateoMaticAPI) FetchReportData(ctx context.Context, city string) (*ReportData[Waves], error) {
+func (api *MateoMaticAPI) FetchReportData(ctx context.Context, city string) (*weatherservice.InformationReporter[weatherservice.Waves], error) {
+	apiURL, err := api.setupQueryParams(city)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := api.client.Get(apiURL)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
 	return nil, nil
 }
+
+func (api *MateoMaticAPI) FetchGeneralInfo(ctx context.Context) (*weatherservice.GeneralInfo, error) {
+	if api.client == nil {
+		return nil, fmt.Errorf("client not initialized")
+	}
+
+	// TODO: Implement actual API call
+	return &weatherservice.GeneralInfo{
+		City:    "San Francisco",
+		Country: "United States",
+		Lon:     122.4194,
+		Lat:     37.7749,
+	}, nil
+}
+
+func (api *MateoMaticAPI) setupQueryParams(city string) (string, error) {
+	if api.client == nil {
+		return "", fmt.Errorf("client not initialized")
+	}
+
+	time := "yesterdayT00:00Z--todayT12:00Z:PT3H"
+
+	format := "json"
+	interest := "max_individual_wave_height:m"
+
+	queryParams := url.Values{}
+	queryParams.Add("access_token", api.token)
+	queryParams.Add("units", "metric")
+	queryParams.Add("APPID", api.key)
+
+	apiUrl := fmt.Sprintf("%s/%s/%s/%s/%s?%s", mateioMaticsAPIURL, time, interest, city, format, queryParams.Encode())
+
+	return apiUrl, nil
+}*/

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"weatherservice"
+	"weatherservice/api"
 )
 
 const port = ":8080"
@@ -11,9 +12,12 @@ func main() {
 
 	weatherServiceSecrets := weatherservice.LoadEnvKey()
 
-	weatherService := weatherservice.NewWeatherReporter(weatherservice.NewWeatherAPI(weatherServiceSecrets.OpenWeatherAPIKey), nil)
+	reporters := weatherservice.NewReporters(
+		api.NewWeatherAPI(weatherServiceSecrets.OpenWeatherAPIKey),
+		api.NewOpenMateoAPI(),
+	)
 
-	server := weatherservice.NewAppServer(weatherService, nil)
+	server := weatherservice.NewAppServer(reporters)
 
 	err := server.Listen(port)
 	if err != nil {
