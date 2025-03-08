@@ -27,6 +27,9 @@ func NewAppServer(reporters *Reporters) *Server {
 		reporters: reporters,
 	}
 
+	// Serve static files from the "public" directory
+	app.Static("/", "./public")
+
 	app.Get("/", server.listGeneralInfo)
 
 	app.Post("/process-form/:CityName", server.listGeneralInfo)

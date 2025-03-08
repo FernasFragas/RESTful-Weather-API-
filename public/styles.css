@@ -1,6 +1,21 @@
 .weather-card {
     max-width: 400px;
     margin: auto;
-    text-align: center;
     font-size: 1.2rem;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+    background-color: #007aff;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #ddd;
 }

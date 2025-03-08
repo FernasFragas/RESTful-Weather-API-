@@ -69,7 +69,7 @@ func (s *Reporters) GenerateReport(ctx context.Context, city string) (*GeneralIn
 		Lon:      weatherInfo.Lon,
 		Waves:    waveInfo.Waves,
 		Weather:  weatherInfo.Weather,
-		EmbedURL: fmt.Sprintf("https://embed.windy.com/embed2.html?lat=%f&lon=%f&zoom=5&level=surface&overlay=wind", weatherInfo.Lat, weatherInfo.Lon),
+		EmbedURL: fmt.Sprintf("https://embed.windy.com/embed2.html?lat=%f&lon=%f&zoom=11&level=surface&overlay=wind", weatherInfo.Lat, weatherInfo.Lon),
 	}, nil
 
 }
