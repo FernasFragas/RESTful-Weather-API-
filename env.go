@@ -1,15 +1,18 @@
 package weatherservice
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type WeatherServiceKeys struct {
 	OpenWeatherAPIKey string
 	StormGlassAPIKey  string
 	MateoMaticsAuths  MateoMaticsSecrets
+	YoutubeAPIKey     string
+	MarkcorpsAPIKey   string
 }
 
 type MateoMaticsSecrets struct {
@@ -31,6 +34,10 @@ func LoadEnvKey() (weatherServiceKeys *WeatherServiceKeys) {
 
 	weatherServiceKeys.MateoMaticsAuths.Username = os.Getenv("MATEOMATICS_USERNAME")
 	weatherServiceKeys.MateoMaticsAuths.Password = os.Getenv("MATEOMATICS_PASSWORD")
+
+	weatherServiceKeys.YoutubeAPIKey = os.Getenv("YOUTUBE_API_KEY")
+
+	weatherServiceKeys.MarkcorpsAPIKey = os.Getenv("MARKCORPS_API_KEY")
 
 	return weatherServiceKeys
 }

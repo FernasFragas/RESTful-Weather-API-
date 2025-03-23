@@ -7,15 +7,19 @@ import (
 )
 
 type ReporterProvider[T any] interface {
-	FetchReportData(ctx context.Context, city string) (*GeneralInfo, error)
-	FetchGeneralInfo(ctx context.Context, city string) (*GeneralInfo, error)
+	FetchReportData(ctx context.Context, city string) (*DataToReport[T], error)
+	FetchGeneralInfo(ctx context.Context, city string) (*DataToReport[T], error)
 }
 
 type ReporterPublisher[T any] interface {
-	PublishReportData(ctx context.Context, weather *GeneralInfo) error
+	PublishReportData(ctx context.Context, weather *GeneralWeatherInfo) error
 }
 
-type GeneralInfo struct {
+type DataToReport[T any] struct {
+	Data T
+}
+
+type GeneralWeatherInfo struct {
 	Weather
 	Waves
 	City     string  `json:"city"`
@@ -25,13 +29,13 @@ type GeneralInfo struct {
 	EmbedURL string  `json:"embed_url"`
 }
 
-type Reporters struct {
-	weatherApi ReporterProvider[Weather]
-	wavesApi   ReporterProvider[Waves]
+type WeatherReporters struct {
+	weatherApi ReporterProvider[GeneralWeatherInfo]
+	wavesApi   ReporterProvider[GeneralWeatherInfo]
 }
 
-func NewReporters(weatherApi ReporterProvider[Weather], wavesApi ReporterProvider[Waves]) *Reporters {
-	return &Reporters{
+func NewWeatherReporters(weatherApi ReporterProvider[GeneralWeatherInfo], wavesApi ReporterProvider[GeneralWeatherInfo]) *WeatherReporters {
+	return &WeatherReporters{
 		weatherApi: weatherApi,
 		wavesApi:   wavesApi,
 	}
@@ -49,27 +53,77 @@ type Waves struct {
 	Height float64 `json:"height"`
 }
 
-func (s *Reporters) GenerateReport(ctx context.Context, city string) (*GeneralInfo, error) {
+func (s *WeatherReporters) GenerateReport(ctx context.Context, city string) (*GeneralWeatherInfo, error) {
 	weatherInfo, err := s.weatherApi.FetchReportData(ctx, city)
 	if err != nil {
 		return nil, err
 	}
 
-	cityCoordinates := fmt.Sprintf("%f,%f", weatherInfo.Lat, weatherInfo.Lon)
+	cityCoordinates := fmt.Sprintf("%f,%f", weatherInfo.Data.Lat, weatherInfo.Data.Lon)
 
 	waveInfo, err := s.wavesApi.FetchReportData(ctx, cityCoordinates)
 	if err != nil {
 		return nil, err
 	}
 
-	return &GeneralInfo{
-		City:     weatherInfo.City,
-		Country:  strings.ToLower(weatherInfo.Country),
-		Lat:      weatherInfo.Lat,
-		Lon:      weatherInfo.Lon,
-		Waves:    waveInfo.Waves,
-		Weather:  weatherInfo.Weather,
-		EmbedURL: fmt.Sprintf("https://embed.windy.com/embed2.html?lat=%f&lon=%f&zoom=11&level=surface&overlay=wind", weatherInfo.Lat, weatherInfo.Lon),
+	return &GeneralWeatherInfo{
+		City:     weatherInfo.Data.City,
+		Country:  strings.ToLower(weatherInfo.Data.Country),
+		Lat:      weatherInfo.Data.Lat,
+		Lon:      weatherInfo.Data.Lon,
+		Waves:    waveInfo.Data.Waves,
+		Weather:  weatherInfo.Data.Weather,
+		EmbedURL: fmt.Sprintf("https://embed.windy.com/embed2.html?lat=%f&lon=%f&zoom=11&level=surface&overlay=wind", weatherInfo.Data.Lat, weatherInfo.Data.Lon),
 	}, nil
 
+}
+
+func NewVideoStreamReporters(youtubeApi ReporterProvider[VideosStream]) *VideoStreamReporters {
+	return &VideoStreamReporters{
+		youtubeApi: youtubeApi,
+	}
+}
+
+type VideoStreamReporters struct {
+	youtubeApi ReporterProvider[VideosStream]
+}
+
+type GeneralVideoStreamInfo struct {
+	Title   string
+	VideoID string
+}
+
+type VideosStream []GeneralVideoStreamInfo
+
+func (s *VideoStreamReporters) GenerateReport(ctx context.Context, city string) (*VideosStream, error) {
+	videos, err := s.youtubeApi.FetchReportData(ctx, city)
+	if err != nil {
+		return nil, err
+	}
+	return &videos.Data, nil
+}
+
+type Hotels []Hotel
+
+type HotelsApi struct {
+	hotelsApi ReporterProvider[Hotels]
+}
+
+func NewHotelsApi(hotelsApi ReporterProvider[Hotels]) *HotelsApi {
+	return &HotelsApi{
+		hotelsApi: hotelsApi,
+	}
+}
+
+type Hotel struct {
+	HotelName string
+	HotelURL  string
+}
+
+func (s *HotelsApi) GenerateReport(ctx context.Context, city string) (*Hotels, error) {
+	hotels, err := s.hotelsApi.FetchReportData(ctx, city)
+	if err != nil {
+		return nil, err
+	}
+	return &hotels.Data, nil
 }

@@ -25,7 +25,7 @@ func NewWeatherAPI(key string) *WeatherAPI {
 	}
 }
 
-func (api *WeatherAPI) FetchReportData(ctx context.Context, city string) (*weatherservice.GeneralInfo, error) {
+func (api *WeatherAPI) FetchReportData(ctx context.Context, city string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
 	weather, err := api.fetchLocationInfo(ctx, city)
 	if err != nil {
 		return nil, err
@@ -36,32 +36,36 @@ func (api *WeatherAPI) FetchReportData(ctx context.Context, city string) (*weath
 		condition = weather.Weather[0].Description
 	}
 
-	return &weatherservice.GeneralInfo{
-		City:    weather.Name,
-		Country: weather.Sys.Country,
-		Lon:     weather.Coordinates.Lon,
-		Lat:     weather.Coordinates.Las,
-		Weather: weatherservice.Weather{
-			Temperature: weather.Temperature.Temperature,
-			FeelsLike:   weather.Temperature.FeelsLike,
-			Wind:        weather.Wind.Speed,
-			Humidity:    weather.Temperature.Humidity,
-			Condition:   condition,
+	return &weatherservice.DataToReport[weatherservice.GeneralWeatherInfo]{
+		Data: weatherservice.GeneralWeatherInfo{
+			City:    weather.Name,
+			Country: weather.Sys.Country,
+			Lon:     weather.Coordinates.Lon,
+			Lat:     weather.Coordinates.Las,
+			Weather: weatherservice.Weather{
+				Temperature: weather.Temperature.Temperature,
+				FeelsLike:   weather.Temperature.FeelsLike,
+				Wind:        weather.Wind.Speed,
+				Humidity:    weather.Temperature.Humidity,
+				Condition:   condition,
+			},
 		},
 	}, nil
 }
 
-func (api *WeatherAPI) FetchGeneralInfo(ctx context.Context, city string) (*weatherservice.GeneralInfo, error) {
+func (api *WeatherAPI) FetchGeneralInfo(ctx context.Context, city string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
 	generalInfo, err := api.fetchLocationInfo(ctx, city)
 	if err != nil {
 		return nil, err
 	}
 
-	return &weatherservice.GeneralInfo{
-		City:    generalInfo.Name,
-		Country: generalInfo.Sys.Country,
-		Lon:     generalInfo.Coordinates.Lon,
-		Lat:     generalInfo.Coordinates.Las,
+	return &weatherservice.DataToReport[weatherservice.GeneralWeatherInfo]{
+		Data: weatherservice.GeneralWeatherInfo{
+			City:    generalInfo.Name,
+			Country: generalInfo.Sys.Country,
+			Lon:     generalInfo.Coordinates.Lon,
+			Lat:     generalInfo.Coordinates.Las,
+		},
 	}, nil
 }
 

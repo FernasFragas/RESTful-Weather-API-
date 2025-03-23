@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Weather Service</title>
+    <title>🌤️Weather Service</title>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -46,78 +46,70 @@
 
 </head>
 <body>
-    <div class="mb-3" style="width:50%; height:250px">
-        <form action="/process-form/:CityName" method="POST" class="d-flex gap-2 p-3" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
-            <label class="form-label" style="color: #333;">City Name</label>
-            <input type="text" name="city_name" id="city_name" class="form-control" style="border-radius: 8px; border: 1px solid #ddd;">
-            <input type="submit" value="Submit" class="btn btn-primary" style="border-radius: 8px; background-color: #b1b2b3; border: none; color: #fff;">
-        </form>
+    <div class="d-flex justify-content-between">
+        <div class="flex-container justify-content-between" style="width:50%; height:250px">
 
-        <!-- Flex Container for Weather Display and Iframe -->
-        <div class="d-flex" style="width:100%; align-items: stretch;">
-            <!-- Weather Display -->
-            {{ if .GeneralInfo }}
-            <div class="weather-card p-4 shadow-sm" style="width:25%; margin-right: 6px; background-size: cover; background-position: center; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow-y: auto;">
-                <h2 style="font-family: 'Inter', sans-serif; font-weight: 500; color: #dddddd;">
-                    {{ .GeneralInfo.City }}
-                    <span class="fi fi-{{ .GeneralInfo.Country }}"></span>
-                </h2>
-                <p style="font-family: 'Inter', sans-serif; color: #dddddd;"><i class="bi bi-thermometer-half"></i> <strong>{{ .GeneralInfo.Weather.Temperature }}°C</strong></p>
-                <p style="font-family: 'Inter', sans-serif; color: #dddddd;"><i class="bi bi-moisture"></i> Humidity: {{ .GeneralInfo.Weather.Humidity }}%</p>
-                <p style="font-family: 'Inter', sans-serif; color: #dddddd;"><i class="bi bi-cloud"></i> {{ .GeneralInfo.Weather.Condition }}</p>
-                <p style="font-family: 'Inter', sans-serif; color: #dddddd;"><i class="fas fa-water"></i> Waves Height: {{ .GeneralInfo.Waves.Height }}m</p>
+            <div class="form-container mb-5">
+                <form action="/process-form/:CityName" method="POST">
+                    <input type="text" name="city_name" placeholder="Search for City..." id="city_name" class="form-control" required>
+                    <input type="submit" value="Search" class="btn btn-primary">
+                </form>
             </div>
-        {{ end }}
 
-        <!-- Iframe for Windy -->
-        <iframe 
-            src="{{ .GeneralInfo.EmbedURL }}" 
-            style="width:75%; background-color: #f5f5f5; border:none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        </iframe>
-    </div>
+            {{ template "weather_display" . }}
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            let condition = "{{ .GeneralInfo.Weather.Condition }}".toLowerCase();
-            let weatherCard = document.querySelector(".weather-card");
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    let condition = "{{ .GeneralInfo.Weather.Condition }}".toLowerCase();
+                    let weatherCard = document.querySelector(".weather-card");
 
-            if (weatherCard) {
-                if (condition.includes("sun")) {
-                    weatherCard.style.backgroundImage = "url('/sunny.jpg')";
-                } else if (condition.includes("cloud")) {
-                    weatherCard.style.backgroundImage = "url('/cloudy.jpg')";
-                } else if (condition.includes("rain")) {
-                    weatherCard.style.backgroundImage = "url('/rainny.jpg')";
-                } else if (condition.includes("storm")) {
-                    weatherCard.style.backgroundImage = "url('/stormy.jpg')";
-                } else {
-                    weatherCard.style.backgroundImage = "url('/default.jpg')"; // Sky Blue (Default)
-                }
-                }
-            });
-        </script>
+                    if (weatherCard) {
+                        if (condition.includes("sun")) {
+                            weatherCard.style.backgroundImage = "url('/sunny.jpg')";
+                        } else if (condition.includes("cloud")) {
+                            weatherCard.style.backgroundImage = "url('/cloudy.jpg')";
+                        } else if (condition.includes("rain")) {
+                            weatherCard.style.backgroundImage = "url('/rainny.jpg')";
+                        } else if (condition.includes("storm")) {
+                            weatherCard.style.backgroundImage = "url('/stormy.jpg')";
+                        } else {
+                            weatherCard.style.backgroundImage = "url('/default.jpg')"; // Sky Blue (Default)
+                        }
+                        }
+                    });
+            </script>
 
-    <!-- Map Display -->
-    <div id="map" style="width:100%; height:500px; background-color: #f5f5f5; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"></div>
+            <!-- Map Display -->
+            <div id="map" style="width:100%; height:100%; background-color: #f5f5f5; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"></div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const lat = "{{ .GeneralInfo.Lat }}";
-            const lon = "{{ .GeneralInfo.Lon }}";
-            console.log(lat, lon);
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    const lat = "{{ .GeneralInfo.Lat }}";
+                    const lon = "{{ .GeneralInfo.Lon }}";
+                    console.log(lat, lon);
 
-            const map = L.map('map').setView([lat, lon], 12);
-        
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
-        
-            L.marker([lat, lon]).addTo(map)
-                .bindPopup("{{ .GeneralInfo.City }}")
-                .openPopup();
-        });
-    </script>
+                    const map = L.map('map').setView([lat, lon], 12);
+                
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '© OpenStreetMap'
+                    }).addTo(map);
+                
+                    L.marker([lat, lon]).addTo(map)
+                        .bindPopup("{{ .GeneralInfo.City }}")
+                        .openPopup();
+                });
+            </script>
+        </div>
+    <div class="mb-3" style="width:50%; height:250px">
+        <div class="form-container mb-5">
+            <form action="/videos" method="GET" hx-target=".video-container" hx-swap="innerHTML">
+                <input type="text" name="query" placeholder="Search for videos..." value="{{.Query}}" class="form-control" required>
+                <input type="submit" value="Search" class="btn btn-primary">
+            </form>
+        </div>
+        {{ template "video" . }}
+        {{ template "hotels_card" . }}
     </div>
 </body>
 </html>

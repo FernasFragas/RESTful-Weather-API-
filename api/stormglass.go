@@ -27,7 +27,7 @@ func NewStormGlassAPI(key string) *StormGlassAPI {
 	}
 }
 
-func (api *StormGlassAPI) FetchReportData(ctx context.Context, city string) (*weatherservice.GeneralInfo, error) {
+func (api *StormGlassAPI) FetchReportData(ctx context.Context, city string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
 	if api.client == nil {
 		return nil, fmt.Errorf("client not initialized")
 	}
@@ -88,14 +88,16 @@ func (api *StormGlassAPI) FetchReportData(ctx context.Context, city string) (*we
 		waveHeight = data.Hours[len(data.Hours)-1].WaveHeight.Noaa
 	}
 
-	return &weatherservice.GeneralInfo{
-		Waves: weatherservice.Waves{
-			Height: waveHeight,
+	return &weatherservice.DataToReport[weatherservice.GeneralWeatherInfo]{
+		Data: weatherservice.GeneralWeatherInfo{
+			Waves: weatherservice.Waves{
+				Height: waveHeight,
+			},
 		},
 	}, nil
 }
 
-func (api *StormGlassAPI) FetchGeneralInfo(ctx context.Context, _ string) (*weatherservice.GeneralInfo, error) {
+func (api *StormGlassAPI) FetchGeneralInfo(ctx context.Context, _ string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
 	if api.client == nil {
 		return nil, fmt.Errorf("client not initialized")
 	}
@@ -105,16 +107,18 @@ func (api *StormGlassAPI) FetchGeneralInfo(ctx context.Context, _ string) (*weat
 		return nil, err
 	}
 
-	var generalInfo []weatherservice.GeneralInfo
+	var generalInfo []weatherservice.GeneralWeatherInfo
 	for _, station := range stations.Data {
-		generalInfo = append(generalInfo, weatherservice.GeneralInfo{
+		generalInfo = append(generalInfo, weatherservice.GeneralWeatherInfo{
 			Country: station.Name,
 			Lon:     station.Lng,
 			Lat:     station.Lat,
 		})
 	}
 
-	return &generalInfo[0], nil
+	return &weatherservice.DataToReport[weatherservice.GeneralWeatherInfo]{
+		Data: generalInfo[0],
+	}, nil
 }
 
 func (api *StormGlassAPI) FetchStationsData(ctx context.Context) (*stations, error) {

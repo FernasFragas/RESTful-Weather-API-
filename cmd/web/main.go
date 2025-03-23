@@ -12,13 +12,20 @@ func main() {
 
 	weatherServiceSecrets := weatherservice.LoadEnvKey()
 
-	reporters := weatherservice.NewReporters(
+	reporters := weatherservice.NewWeatherReporters(
 		api.NewWeatherAPI(weatherServiceSecrets.OpenWeatherAPIKey),
 		api.NewOpenMateoAPI(),
 	)
 
-	server := weatherservice.NewAppServer(reporters)
+	hotelsApi := weatherservice.NewHotelsApi(
+		api.NewMarkcorpsAPI(weatherServiceSecrets.MarkcorpsAPIKey),
+	)
 
+	videoStreamReporters := weatherservice.NewVideoStreamReporters(
+		api.NewYoutubeAPI(weatherServiceSecrets.YoutubeAPIKey),
+	)
+
+	server := weatherservice.NewAppServer(reporters, videoStreamReporters, hotelsApi)
 	err := server.Listen(port)
 	if err != nil {
 		log.Fatal(err)

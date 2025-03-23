@@ -8,14 +8,74 @@
 }
 
 .btn-primary {
-    background-color: #007aff;
+    background-color: #606060;
     border: none;
     border-radius: 8px;
     color: #fff;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.form-control {
+.form-container {
+    width: 100%;
+    height: 5%;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: auto;
+    padding: 5px;
+}
+
+.form-container form {
+    display: flex;
+    gap: 10px;
+}
+
+.form-container input[type="text"],
+.form-container input[type="submit"] {
     border-radius: 8px;
     border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.form-container input[type="submit"] {
+    background-color: #b1b2b3;
+    color: #fff;
+    border: none;
+}
+
+.video-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Three videos per row */
+    gap: 5px; /* Space between videos */
+    justify-items: center; /* Center the videos within their grid cells */
+    max-width: 100%; /* Ensure the container doesn't exceed the page width */
+    margin: 0 auto; /* Center the container on the page */
+}
+
+.video {
+    width: 100%; /* Full width of the grid cell */
+    background-color: #ffffff; /* Light background color */
+    border-radius: 1px; /* Rounded corners */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    overflow: hidden; /* Ensure content doesn't overflow */
+    transition: transform 0.2s; /* Smooth transition for hover effect */
+}
+
+.video:hover {
+    transform: scale(1.05); /* Slightly enlarge on hover */
+}
+
+.video iframe {
+    width: 100%;
+    height: 75%; /* Adjust height for a smaller display */
+    border: none;
+    border-radius: 8px 8px 0 0; /* Match the top corners */
+}
+
+.video p {
+    padding: 1px;
+    font-family: 'Inter', sans-serif;
+    color: #333;
+    text-align: center;
+    font-size: 0.8rem; /* Smaller font size for a minimalist look */
 }
