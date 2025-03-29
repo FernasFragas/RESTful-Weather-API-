@@ -13,6 +13,8 @@ type WeatherServiceKeys struct {
 	MateoMaticsAuths  MateoMaticsSecrets
 	YoutubeAPIKey     string
 	MarkcorpsAPIKey   string
+	AmadeusID         string
+	AmadeusSecret     string
 }
 
 type MateoMaticsSecrets struct {
@@ -38,6 +40,9 @@ func LoadEnvKey() (weatherServiceKeys *WeatherServiceKeys) {
 	weatherServiceKeys.YoutubeAPIKey = os.Getenv("YOUTUBE_API_KEY")
 
 	weatherServiceKeys.MarkcorpsAPIKey = os.Getenv("MARKCORPS_API_KEY")
+
+	weatherServiceKeys.AmadeusID = os.Getenv("AMADEUS_ID")
+	weatherServiceKeys.AmadeusSecret = os.Getenv("AMADEUS_CLIENT_SECRET")
 
 	return weatherServiceKeys
 }

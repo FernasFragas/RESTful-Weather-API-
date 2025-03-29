@@ -94,7 +94,7 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	hotels, err := s.hotelsApi.GenerateReport(ctx.Context(), city)
+	hotels, err := s.hotelsApi.GenerateReport(ctx.Context(), fmt.Sprintf("%f,%f", generalInfo.Lat, generalInfo.Lon))
 	if err != nil {
 		return err
 	}

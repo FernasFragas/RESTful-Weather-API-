@@ -10,6 +10,7 @@ import (
 )
 
 const markcorpsHotelsCityIDsAPIURL = "https://api.makcorps.com/mapping?"
+const markcorpsHotelsAPIURL = "https://api.makcorps.com/city?"
 
 type MarkcorpsAPI struct {
 	client *http.Client
@@ -36,7 +37,14 @@ func (api *MarkcorpsAPI) FetchReportData(ctx context.Context, city string) (*wea
 
 	c := (*locations)[0]
 
-	apiUrl, err := api.setupQueryParams(c.DocumentID)
+	apiUrl, err := api.setupQueryParams(map[string]string{
+		"name":     c.DocumentID,
+		"cur":      "EUR",
+		"rooms":    "1",
+		"adults":   "2",
+		"checkin":  "2025-12-25",
+		"checkout": "2025-12-26",
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +83,9 @@ func (api *MarkcorpsAPI) fetchLocationData(ctx context.Context, city string) (*[
 		return nil, fmt.Errorf("client not initialized")
 	}
 
-	apiUrl, err := api.setupQueryParams(city)
+	apiUrl, err := api.setupQueryParams(map[string]string{
+		"name": city,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -99,12 +109,19 @@ func (api *MarkcorpsAPI) fetchLocationData(ctx context.Context, city string) (*[
 	return &location, nil
 }
 
-func (api *MarkcorpsAPI) setupQueryParams(city string) (string, error) {
+func (api *MarkcorpsAPI) setupQueryParams(paramsToPass map[string]string) (string, error) {
 	params := url.Values{}
 	params.Add("api_key", api.apiKey)
-	params.Add("name", city)
+	for key, value := range paramsToPass {
+		params.Add(key, value)
+	}
 
-	apiUrl := fmt.Sprintf("%s%s", markcorpsHotelsCityIDsAPIURL, params.Encode())
+	var apiUrl string
+	if len(paramsToPass) == 1 {
+		apiUrl = fmt.Sprintf("%s%s", markcorpsHotelsCityIDsAPIURL, params.Encode())
+	} else {
+		apiUrl = fmt.Sprintf("%s%s", markcorpsHotelsAPIURL, params.Encode())
+	}
 
 	return apiUrl, nil
 }

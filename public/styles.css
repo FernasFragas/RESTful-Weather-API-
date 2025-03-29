@@ -79,3 +79,30 @@
     text-align: center;
     font-size: 0.8rem; /* Smaller font size for a minimalist look */
 }
+
+.hotel-card {
+    background-color: #f8f9fa; /* Light background color */
+    border: 1px solid #ddd; /* Border for the card */
+    transition: transform 0.2s; /* Smooth transition for hover effect */
+}
+
+.hotel-card:hover {
+    transform: translateY(-5px); /* Slight lift effect on hover */
+}
+
+.date-inputs {
+    margin-top: 10px;
+}
+
+.date-inputs label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.date-inputs input {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}

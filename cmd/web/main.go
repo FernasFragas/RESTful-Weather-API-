@@ -18,9 +18,8 @@ func main() {
 	)
 
 	hotelsApi := weatherservice.NewHotelsApi(
-		api.NewMarkcorpsAPI(weatherServiceSecrets.MarkcorpsAPIKey),
+		api.NewAmadeusAPI(weatherServiceSecrets.AmadeusID, weatherServiceSecrets.AmadeusSecret),
 	)
-
 	videoStreamReporters := weatherservice.NewVideoStreamReporters(
 		api.NewYoutubeAPI(weatherServiceSecrets.YoutubeAPIKey),
 	)

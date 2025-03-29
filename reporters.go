@@ -107,6 +107,7 @@ type Hotels []Hotel
 
 type HotelsApi struct {
 	hotelsApi ReporterProvider[Hotels]
+	photosAPI ReporterProvider[HotelsPhotos]
 }
 
 func NewHotelsApi(hotelsApi ReporterProvider[Hotels]) *HotelsApi {
@@ -116,8 +117,9 @@ func NewHotelsApi(hotelsApi ReporterProvider[Hotels]) *HotelsApi {
 }
 
 type Hotel struct {
-	HotelName string
-	HotelURL  string
+	HotelName   string
+	HotelURL    string
+	HotelPhotos []string
 }
 
 func (s *HotelsApi) GenerateReport(ctx context.Context, city string) (*Hotels, error) {
@@ -125,5 +127,27 @@ func (s *HotelsApi) GenerateReport(ctx context.Context, city string) (*Hotels, e
 	if err != nil {
 		return nil, err
 	}
+
+	// search for the photos
+	hotelsPhotos, err := s.photosAPI.FetchReportData(ctx, city)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hotel := range hotels.Data {
+		for _, hotelPhoto := range hotelsPhotos.Data {
+			if hotel.HotelName == hotelPhoto.HotelName {
+				hotel.HotelPhotos = hotelPhoto.HotelPhotos
+			}
+		}
+	}
+
 	return &hotels.Data, nil
+}
+
+type HotelsPhotos []HotelPhotos
+
+type HotelPhotos struct {
+	HotelName   string
+	HotelPhotos []string
 }
