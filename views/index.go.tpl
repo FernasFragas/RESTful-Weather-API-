@@ -77,37 +77,9 @@
                         }
                         }
                     });
-            </script>
-
-            <!-- Map Display -->
-            <div id="map" style="width:100%; height:100%; background-color: #f5f5f5; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"></div>
-
-            <script>
-                document.addEventListener("DOMContentLoaded", function() {
-                    const lat = "{{ .GeneralInfo.Lat }}";
-                    const lon = "{{ .GeneralInfo.Lon }}";
-                    console.log(lat, lon);
-
-                    const map = L.map('map').setView([lat, lon], 12);
-                
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        maxZoom: 19,
-                        attribution: '© OpenStreetMap'
-                    }).addTo(map);
-                
-                    L.marker([lat, lon]).addTo(map)
-                        .bindPopup("{{ .GeneralInfo.City }}")
-                        .openPopup();
-                });
-            </script>
+            </script> 
         </div>
     <div class="mb-3" style="width:50%; height:250px">
-        <div class="form-container mb-5">
-            <form action="/videos" method="GET" hx-target=".video-container" hx-swap="innerHTML">
-                <input type="text" name="query" placeholder="Search for videos..." value="{{.Query}}" class="form-control" required>
-                <input type="submit" value="Search" class="btn btn-primary">
-            </form>
-        </div>
         {{ template "video" . }}
         {{ template "hotels_card" . }}
     </div>

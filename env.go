@@ -8,13 +8,14 @@ import (
 )
 
 type WeatherServiceKeys struct {
-	OpenWeatherAPIKey string
-	StormGlassAPIKey  string
-	MateoMaticsAuths  MateoMaticsSecrets
-	YoutubeAPIKey     string
-	MarkcorpsAPIKey   string
-	AmadeusID         string
-	AmadeusSecret     string
+	OpenWeatherAPIKey  string
+	StormGlassAPIKey   string
+	MateoMaticsAuths   MateoMaticsSecrets
+	YoutubeAPIKey      string
+	MarkcorpsAPIKey    string
+	AmadeusID          string
+	AmadeusSecret      string
+	GooglePlacesAPIKey string
 }
 
 type MateoMaticsSecrets struct {
@@ -43,6 +44,8 @@ func LoadEnvKey() (weatherServiceKeys *WeatherServiceKeys) {
 
 	weatherServiceKeys.AmadeusID = os.Getenv("AMADEUS_ID")
 	weatherServiceKeys.AmadeusSecret = os.Getenv("AMADEUS_CLIENT_SECRET")
+
+	weatherServiceKeys.GooglePlacesAPIKey = os.Getenv("GOOGLE_PLACES_API_KEY")
 
 	return weatherServiceKeys
 }

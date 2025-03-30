@@ -7,8 +7,8 @@ import (
 )
 
 type ReporterProvider[T any] interface {
-	FetchReportData(ctx context.Context, city string) (*DataToReport[T], error)
-	FetchGeneralInfo(ctx context.Context, city string) (*DataToReport[T], error)
+	FetchReportData(ctx context.Context, _ string) (*DataToReport[T], error)
+	FetchGeneralInfo(ctx context.Context, _ string) (*DataToReport[T], error)
 }
 
 type ReporterPublisher[T any] interface {
@@ -110,9 +110,10 @@ type HotelsApi struct {
 	photosAPI ReporterProvider[HotelsPhotos]
 }
 
-func NewHotelsApi(hotelsApi ReporterProvider[Hotels]) *HotelsApi {
+func NewHotelsApi(hotelsApi ReporterProvider[Hotels], photosAPI ReporterProvider[HotelsPhotos]) *HotelsApi {
 	return &HotelsApi{
 		hotelsApi: hotelsApi,
+		photosAPI: photosAPI,
 	}
 }
 
@@ -128,26 +129,35 @@ func (s *HotelsApi) GenerateReport(ctx context.Context, city string) (*Hotels, e
 		return nil, err
 	}
 
+	hotelsPhotos := make([]*DataToReport[HotelsPhotos], len(hotels.Data))
+
 	// search for the photos
-	hotelsPhotos, err := s.photosAPI.FetchReportData(ctx, city)
-	if err != nil {
-		return nil, err
+	// TODO Make this async AND parallel USING GOROUTINES AND CHANNELS
+	for i, hotel := range hotels.Data {
+		hotelsPhotos[i], err = s.photosAPI.FetchReportData(ctx, hotel.HotelName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	for _, hotel := range hotels.Data {
-		for _, hotelPhoto := range hotelsPhotos.Data {
+	data := make(Hotels, len(hotels.Data))
+
+	for i, hotel := range hotels.Data {
+		data[i].HotelName = hotel.HotelName
+		data[i].HotelURL = hotel.HotelURL
+		for _, hotelPhoto := range hotelsPhotos[i].Data {
 			if hotel.HotelName == hotelPhoto.HotelName {
-				hotel.HotelPhotos = hotelPhoto.HotelPhotos
+				data[i].HotelPhotos = append(data[i].HotelPhotos, hotelPhoto.HotelPhotos...)
 			}
 		}
 	}
 
-	return &hotels.Data, nil
+	return &data, nil
 }
 
-type HotelsPhotos []HotelPhotos
+type HotelsPhotos []HotelPhoto
 
-type HotelPhotos struct {
+type HotelPhoto struct {
 	HotelName   string
 	HotelPhotos []string
 }

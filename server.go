@@ -99,8 +99,6 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	fmt.Println(hotels)
-
 	return ctx.Render("index", map[string]any{"GeneralInfo": generalInfo, "Videos": videos, "Hotels": hotels})
 }
 

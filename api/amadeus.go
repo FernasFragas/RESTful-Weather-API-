@@ -98,7 +98,7 @@ func (api *AmadeusAPI) FetchReportData(ctx context.Context, city string) (*weath
 		}
 	}
 
-	return &weatherservice.DataToReport[weatherservice.Hotels]{Data: hotels}, nil
+	return &weatherservice.DataToReport[weatherservice.Hotels]{Data: hotels[0:10]}, nil
 }
 
 func (api *AmadeusAPI) FetchGeneralInfo(ctx context.Context, _ string) (*weatherservice.DataToReport[weatherservice.Hotels], error) {
