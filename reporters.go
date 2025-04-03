@@ -118,9 +118,16 @@ func NewHotelsApi(hotelsApi ReporterProvider[Hotels], photosAPI ReporterProvider
 }
 
 type Hotel struct {
-	HotelName   string
-	HotelURL    string
-	HotelPhotos []string
+	HotelName    string
+	HotelURL     string
+	HotelPrice   string
+	HotelRating  float64
+	HotelAddress string
+	HotelMapURL  string
+	ContactPhone string
+	PriceRange   string
+	HotelPhotos  []string
+	HotelReviews []string
 }
 
 func (s *HotelsApi) GenerateReport(ctx context.Context, city string) (*Hotels, error) {
@@ -144,9 +151,12 @@ func (s *HotelsApi) GenerateReport(ctx context.Context, city string) (*Hotels, e
 
 	for i, hotel := range hotels.Data {
 		data[i].HotelName = hotel.HotelName
-		data[i].HotelURL = hotel.HotelURL
 		for _, hotelPhoto := range hotelsPhotos[i].Data {
 			if hotel.HotelName == hotelPhoto.HotelName {
+				if hotelPhoto.HotelURL == "" {
+					continue
+				}
+				data[i].HotelURL = hotelPhoto.HotelURL
 				data[i].HotelPhotos = append(data[i].HotelPhotos, hotelPhoto.HotelPhotos...)
 			}
 		}
@@ -160,4 +170,5 @@ type HotelsPhotos []HotelPhoto
 type HotelPhoto struct {
 	HotelName   string
 	HotelPhotos []string
+	HotelURL    string
 }
