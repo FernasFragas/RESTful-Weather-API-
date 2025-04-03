@@ -172,3 +172,17 @@ type HotelPhoto struct {
 	HotelPhotos []string
 	HotelURL    string
 }
+
+type FlightsInfo []FlightInfo
+
+type FlightInfo struct {
+	DepartureDate  string
+	ArrivalDate    string
+	Airline        string
+	FlightNumber   string
+	FlightDuration string
+	Price          float64
+	Origin         string
+	Destination    string
+	FlightMapURL   string
+}
