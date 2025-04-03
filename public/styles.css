@@ -1,108 +1,322 @@
-.weather-card {
-    max-width: 400px;
-    margin: auto;
-    font-size: 1.2rem;
-    background-color: #ffffff;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+/* Base styles and resets */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-.btn-primary {
-    background-color: #606060;
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
 }
 
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Background and container */
+.macos-bg {
+    background: #2c3e50;
+    background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+    background: -webkit-linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+    min-height: 100vh;
+    position: relative;
+}
+
+.glass-container {
+    background: rgba(255, 255, 255, 0.1);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Form styles */
 .form-container {
-    width: 100%;
-    height: 5%;
-    background-color: #ffffff;
+    width: 90%;
+    max-width: 500px;
+    margin: 0 auto 2rem;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin: auto;
-    padding: 5px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .form-container form {
     display: flex;
     gap: 10px;
+    width: 100%;
 }
 
-.form-container input[type="text"],
-.form-container input[type="submit"] {
+.form-container input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
-    border: 1px solid #ddd;
-    padding: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 16px;
 }
 
-.form-container input[type="submit"] {
-    background-color: #b1b2b3;
-    color: #fff;
+.form-container input[type="text"]::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
     border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
+.btn-primary:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Weather card */
+.weather-card {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 2rem;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+}
+
+/* Video container */
 .video-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* Three videos per row */
-    gap: 5px; /* Space between videos */
-    justify-items: center; /* Center the videos within their grid cells */
-    max-width: 100%; /* Ensure the container doesn't exceed the page width */
-    margin: 0 auto; /* Center the container on the page */
+    width: 100%;
+    margin: 0 auto 2rem;
+    overflow-x: auto;
+    display: flex;
+    gap: 15px;
+    padding: 20px 0;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
 }
 
 .video {
-    width: 100%; /* Full width of the grid cell */
-    background-color: #ffffff; /* Light background color */
-    border-radius: 1px; /* Rounded corners */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-    overflow: hidden; /* Ensure content doesn't overflow */
-    transition: transform 0.2s; /* Smooth transition for hover effect */
-}
-
-.video:hover {
-    transform: scale(1.05); /* Slightly enlarge on hover */
+    flex: 0 0 300px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
 }
 
 .video iframe {
     width: 100%;
-    height: 75%; /* Adjust height for a smaller display */
+    height: 169px;
     border: none;
-    border-radius: 8px 8px 0 0; /* Match the top corners */
 }
 
 .video p {
-    padding: 1px;
-    font-family: 'Inter', sans-serif;
-    color: #333;
+    padding: 10px;
+    color: white;
+    font-size: 0.9rem;
     text-align: center;
-    font-size: 0.8rem; /* Smaller font size for a minimalist look */
 }
 
+/* Hotel cards */
 .hotel-card {
-    background-color: #f8f9fa; /* Light background color */
-    border: 1px solid #ddd; /* Border for the card */
-    transition: transform 0.2s; /* Smooth transition for hover effect */
+    width: 100%;
+    margin-bottom: 1.5rem;
+    padding: 25px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .hotel-card:hover {
-    transform: translateY(-5px); /* Slight lift effect on hover */
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-.date-inputs {
-    margin-top: 10px;
+.hotel-card h2 {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    color: rgba(255, 255, 255, 0.95);
+    letter-spacing: -0.5px;
 }
 
-.date-inputs label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-.date-inputs input {
+/* Hotel images container */
+.hotel-card .image-scroll {
     width: 100%;
-    padding: 5px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+    overflow-x: auto;
+    white-space: nowrap;
+    margin: 1rem 0;
+    padding: 10px 0;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+}
+
+/* Hotel images */
+.hotel-card img {
+    display: inline-block;
+    width: 200px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-right: 15px;
+    transition: transform 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.hotel-card img:hover {
+    transform: scale(1.02);
+}
+
+/* Hotel URL styling */
+.hotel-card a {
+    display: inline-block;
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    transition: all 0.2s ease;
+}
+
+.hotel-card a:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+/* Scrollbar for image scroll */
+.hotel-card .image-scroll::-webkit-scrollbar {
+    height: 4px;
+}
+
+.hotel-card .image-scroll::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+}
+
+.hotel-card .image-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+/* Scrollbar styling */
+.video-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.video-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.video-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .form-container {
+        width: 95%;
+    }
+
+    .form-container form {
+        flex-direction: column;
+    }
+
+    .btn-primary {
+        width: 100%;
+        padding: 12px;
+    }
+
+    .video {
+        flex: 0 0 250px;
+    }
+
+    .hotel-card {
+        padding: 20px;
+    }
+
+    .hotel-card img {
+        width: 180px;
+        height: 135px;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-container {
+        padding: 10px;
+    }
+
+    .weather-card,
+    .hotel-card {
+        padding: 15px;
+    }
+
+    .video {
+        flex: 0 0 200px;
+    }
+
+    .hotel-card {
+        padding: 15px;
+    }
+
+    .hotel-card img {
+        width: 160px;
+        height: 120px;
+    }
+
+    .hotel-card h2 {
+        font-size: 1.25rem;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* Fallbacks for older browsers */
+@supports not (backdrop-filter: blur(10px)) {
+    .glass-container,
+    .form-container,
+    .weather-card,
+    .video,
+    .hotel-card {
+        background: rgba(255, 255, 255, 0.9);
+        color: #333;
+    }
+
+    .hotel-card {
+        background: rgba(255, 255, 255, 0.95);
+        color: #333;
+    }
+
+    .hotel-card a {
+        background: rgba(0, 0, 0, 0.1);
+        color: #333;
+    }
+
+    .hotel-card:hover {
+        background: rgba(255, 255, 255, 1);
+    }
 }
