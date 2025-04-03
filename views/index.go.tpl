@@ -45,43 +45,58 @@
     <script src="https://unpkg.com/htmx.org@1.9.11" integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0" crossorigin="anonymous"></script>
 
 </head>
-<body>
-    <div class="d-flex justify-content-between">
-        <div class="flex-container justify-content-between" style="width:50%; height:250px">
+<body class="macos-bg">
+    <div class="glass-container">
+        <div class="container-fluid p-4">
+            <div class="row justify-content-center">
+                <!-- Search Form -->
+                <div class="col-12 mb-4">
+                    <div class="form-container">
+                        <form action="/process-form/:CityName" method="POST">
+                            <input type="text" name="city_name" placeholder="Search for City..." id="city_name" class="form-control" required>
+                            <input type="submit" value="Search" class="btn btn-primary">
+                        </form>
+                    </div>
+                </div>
 
-            <div class="form-container mb-5">
-                <form action="/process-form/:CityName" method="POST">
-                    <input type="text" name="city_name" placeholder="Search for City..." id="city_name" class="form-control" required>
-                    <input type="submit" value="Search" class="btn btn-primary">
-                </form>
+                <!-- Weather Display -->
+                <div class="col-12 col-md-8 col-lg-6 mb-4">
+                    {{ template "weather_display" . }}
+                </div>
+
+                <!-- Videos Section -->
+                <div class="col-12 mb-4">
+                    {{ template "video" . }}
+                </div>
+
+                <!-- Hotels Section -->
+                <div class="col-12 mb-4">
+                    {{ template "hotels_card" . }}
+                </div>
             </div>
-
-            {{ template "weather_display" . }}
-
-            <script>
-                document.addEventListener("DOMContentLoaded", function() {
-                    let condition = "{{ .GeneralInfo.Weather.Condition }}".toLowerCase();
-                    let weatherCard = document.querySelector(".weather-card");
-
-                    if (weatherCard) {
-                        if (condition.includes("sun")) {
-                            weatherCard.style.backgroundImage = "url('/sunny.jpg')";
-                        } else if (condition.includes("cloud")) {
-                            weatherCard.style.backgroundImage = "url('/cloudy.jpg')";
-                        } else if (condition.includes("rain")) {
-                            weatherCard.style.backgroundImage = "url('/rainny.jpg')";
-                        } else if (condition.includes("storm")) {
-                            weatherCard.style.backgroundImage = "url('/stormy.jpg')";
-                        } else {
-                            weatherCard.style.backgroundImage = "url('/default.jpg')"; // Sky Blue (Default)
-                        }
-                        }
-                    });
-            </script> 
         </div>
-    <div class="mb-3" style="width:50%; height:250px">
-        {{ template "video" . }}
-        {{ template "hotels_card" . }}
     </div>
+
+    <!-- Weather Card Background Script -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let condition = "{{ .GeneralInfo.Weather.Condition }}".toLowerCase();
+            let weatherCard = document.querySelector(".weather-card");
+
+            if (weatherCard) {
+                if (condition.includes("sun")) {
+                    weatherCard.style.backgroundImage = "url('/sunny.jpg')";
+                } else if (condition.includes("cloud")) {
+                    weatherCard.style.backgroundImage = "url('/cloudy.jpg')";
+                } else if (condition.includes("rain")) {
+                    weatherCard.style.backgroundImage = "url('/rainny.jpg')";
+                } else if (condition.includes("storm")) {
+                    weatherCard.style.backgroundImage = "url('/stormy.jpg')";
+                } else {
+                    weatherCard.style.backgroundImage = "url('/default.jpg')";
+                }
+            }
+        });
+    </script> 
 </body>
 </html>
