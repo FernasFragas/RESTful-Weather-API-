@@ -41,12 +41,12 @@ func NewAmadeusAPI(amadeusID string, amadeusSecret string) *AmadeusAPI {
 	return api
 }
 
-func (api *AmadeusAPI) FetchReportData(ctx context.Context, city string) (*weatherservice.DataToReport[weatherservice.Hotels], error) {
+func (api *AmadeusAPI) FetchReportData(ctx context.Context, city ...string) (*weatherservice.DataToReport[weatherservice.Hotels], error) {
 	if api.client == nil {
 		return nil, fmt.Errorf("client not initialized")
 	}
 
-	coord := strings.Split(city, ",")
+	coord := strings.Split(city[0], ",")
 
 	lat, err := strconv.ParseFloat(coord[0], 64)
 	if err != nil {
@@ -61,7 +61,7 @@ func (api *AmadeusAPI) FetchReportData(ctx context.Context, city string) (*weath
 	params := url.Values{}
 	params.Add("latitude", strconv.FormatFloat(lat, 'f', -1, 64))
 	params.Add("longitude", strconv.FormatFloat(lon, 'f', -1, 64))
-	params.Add("radius", "100")
+	params.Add("radius", "10")
 	params.Add("hotelSource", "ALL")
 	params.Add("radiusUnit", "KM")
 
@@ -91,6 +91,7 @@ func (api *AmadeusAPI) FetchReportData(ctx context.Context, city string) (*weath
 	}
 
 	hotels := make(weatherservice.Hotels, len(response.Data))
+
 	for i, hotel := range response.Data {
 		hotels[i] = weatherservice.Hotel{
 			HotelName: hotel.Name,
@@ -101,7 +102,7 @@ func (api *AmadeusAPI) FetchReportData(ctx context.Context, city string) (*weath
 	return &weatherservice.DataToReport[weatherservice.Hotels]{Data: hotels[0:10]}, nil
 }
 
-func (api *AmadeusAPI) FetchGeneralInfo(ctx context.Context, _ string) (*weatherservice.DataToReport[weatherservice.Hotels], error) {
+func (api *AmadeusAPI) FetchGeneralInfo(ctx context.Context, _ ...string) (*weatherservice.DataToReport[weatherservice.Hotels], error) {
 	return nil, nil
 }
 

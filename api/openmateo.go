@@ -22,12 +22,12 @@ func NewOpenMateoAPI() *OpenMateoAPI {
 	}
 }
 
-func (api *OpenMateoAPI) FetchReportData(ctx context.Context, city string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
+func (api *OpenMateoAPI) FetchReportData(ctx context.Context, city ...string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
 	if api.client == nil {
 		return nil, fmt.Errorf("client not initialized")
 	}
 
-	coordinates := strings.Split(city, ",")
+	coordinates := strings.Split(city[0], ",")
 
 	req, err := http.NewRequest("GET", openMateoURl, nil)
 	if err != nil {
@@ -76,7 +76,7 @@ func (api *OpenMateoAPI) FetchReportData(ctx context.Context, city string) (*wea
 	}, nil
 }
 
-func (api *OpenMateoAPI) FetchGeneralInfo(ctx context.Context, city string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
+func (api *OpenMateoAPI) FetchGeneralInfo(ctx context.Context, city ...string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
 	//not implemented
 	return nil, nil
 }

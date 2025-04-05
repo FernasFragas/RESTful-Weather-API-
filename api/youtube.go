@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	NumberOfMaxVideos = 3
+	NumberOfMaxVideos = 10
 )
 
 type YoutubeAPI struct {
@@ -26,13 +26,13 @@ func NewYoutubeAPI(key string) *YoutubeAPI {
 	}
 }
 
-func (api *YoutubeAPI) FetchReportData(ctx context.Context, query string) (*weatherservice.DataToReport[weatherservice.VideosStream], error) {
+func (api *YoutubeAPI) FetchReportData(ctx context.Context, query ...string) (*weatherservice.DataToReport[weatherservice.VideosStream], error) {
 	youtubeService, err := youtube.NewService(ctx, option.WithAPIKey(api.key))
 	if err != nil {
 		return nil, err
 	}
 
-	call := youtubeService.Search.List([]string{"snippet"}).Q(query).MaxResults(NumberOfMaxVideos)
+	call := youtubeService.Search.List([]string{"snippet"}).Q(query[0]).MaxResults(NumberOfMaxVideos)
 
 	response, err := call.Do()
 	if err != nil {
@@ -47,11 +47,52 @@ func (api *YoutubeAPI) FetchReportData(ctx context.Context, query string) (*weat
 		})
 	}
 
+	//filter out videos that are not embeddable
+	videoStreams = filterEmbeddableVideos(youtubeService, videoStreams)
+
 	return &weatherservice.DataToReport[weatherservice.VideosStream]{
 		Data: videoStreams,
 	}, nil
 }
 
-func (api *YoutubeAPI) FetchGeneralInfo(ctx context.Context, _ string) (*weatherservice.DataToReport[weatherservice.VideosStream], error) {
+func (api *YoutubeAPI) FetchGeneralInfo(ctx context.Context, _ ...string) (*weatherservice.DataToReport[weatherservice.VideosStream], error) {
 	return nil, nil
+}
+
+func filterEmbeddableVideos(youtubeService *youtube.Service, videoStreams weatherservice.VideosStream) weatherservice.VideosStream {
+	videoIDs := filterOutVideosIds(videoStreams)
+
+	// Retrieve video statuses
+	videoStatuses := youtubeService.Videos.List([]string{"status"}).Id(videoIDs...)
+
+	videoStatusesResp, err := videoStatuses.Do()
+	if err != nil {
+		return nil
+	}
+
+	// Filter out videos that are not embeddable
+	return filterOutUnavailableVideos(videoStatusesResp, videoStreams)
+}
+
+func filterOutVideosIds(videoStreams weatherservice.VideosStream) []string {
+	var videoIDs []string
+	for _, item := range videoStreams {
+		videoIDs = append(videoIDs, item.VideoID)
+	}
+
+	return videoIDs
+}
+
+func filterOutUnavailableVideos(videos *youtube.VideoListResponse, videosStream weatherservice.VideosStream) weatherservice.VideosStream {
+	var videosFiltered weatherservice.VideosStream
+
+	for _, video := range videos.Items {
+		for _, vid := range videosStream {
+			if video.Status.Embeddable && video.Id == vid.VideoID {
+				videosFiltered = append(videosFiltered, vid)
+			}
+		}
+	}
+
+	return videosFiltered
 }

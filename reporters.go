@@ -7,8 +7,8 @@ import (
 )
 
 type ReporterProvider[T any] interface {
-	FetchReportData(ctx context.Context, _ string) (*DataToReport[T], error)
-	FetchGeneralInfo(ctx context.Context, _ string) (*DataToReport[T], error)
+	FetchReportData(ctx context.Context, _ ...string) (*DataToReport[T], error)
+	FetchGeneralInfo(ctx context.Context, _ ...string) (*DataToReport[T], error)
 }
 
 type ReporterPublisher[T any] interface {
@@ -103,8 +103,6 @@ func (s *VideoStreamReporters) GenerateReport(ctx context.Context, city string) 
 	return &videos.Data, nil
 }
 
-type Hotels []Hotel
-
 type HotelsApi struct {
 	hotelsApi ReporterProvider[Hotels]
 	photosAPI ReporterProvider[HotelsPhotos]
@@ -116,6 +114,8 @@ func NewHotelsApi(hotelsApi ReporterProvider[Hotels], photosAPI ReporterProvider
 		photosAPI: photosAPI,
 	}
 }
+
+type Hotels []Hotel
 
 type Hotel struct {
 	HotelName    string
@@ -136,30 +136,28 @@ func (s *HotelsApi) GenerateReport(ctx context.Context, city string) (*Hotels, e
 		return nil, err
 	}
 
-	hotelsPhotos := make([]*DataToReport[HotelsPhotos], len(hotels.Data))
-
-	// search for the photos
-	// TODO Make this async AND parallel USING GOROUTINES AND CHANNELS
-	for i, hotel := range hotels.Data {
-		hotelsPhotos[i], err = s.photosAPI.FetchReportData(ctx, hotel.HotelName)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	data := make(Hotels, len(hotels.Data))
 
 	for i, hotel := range hotels.Data {
-		data[i].HotelName = hotel.HotelName
-		for _, hotelPhoto := range hotelsPhotos[i].Data {
-			if hotel.HotelName == hotelPhoto.HotelName {
-				if hotelPhoto.HotelURL == "" {
-					continue
-				}
-				data[i].HotelURL = hotelPhoto.HotelURL
-				data[i].HotelPhotos = append(data[i].HotelPhotos, hotelPhoto.HotelPhotos...)
+		for _, photo := range hotel.HotelPhotos {
+			hotelsPhotos, err := s.photosAPI.FetchReportData(ctx, photo)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(hotelsPhotos.Data) > 0 {
+				data[i].HotelPhotos = append(data[i].HotelPhotos, hotelsPhotos.Data[0].HotelPhotos...)
 			}
 		}
+
+		data[i].HotelName = hotel.HotelName
+		data[i].HotelURL = hotel.HotelURL
+		data[i].HotelPrice = hotel.HotelPrice
+		data[i].HotelRating = hotel.HotelRating
+		data[i].HotelAddress = hotel.HotelAddress
+		data[i].HotelMapURL = hotel.HotelMapURL
+		data[i].ContactPhone = hotel.ContactPhone
+		data[i].PriceRange = hotel.PriceRange
 	}
 
 	return &data, nil

@@ -60,7 +60,7 @@
                 </div>
 
                 <!-- Weather Display -->
-                <div class="col-12 col-md-8 col-lg-6 mb-4">
+                <div class="col-12 mb-4">
                     {{ template "weather_display" . }}
                 </div>
 

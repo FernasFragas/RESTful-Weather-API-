@@ -1,84 +1,62 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"weatherservice"
 )
 
 const googlePlaceMapTextSearchURL = "https://places.googleapis.com/v1/places:searchText"
 const googlePhotosURL = "https://places.googleapis.com/v1/%s/media?maxHeightPx=400&maxWidthPx=400&key=%s"
 
-type GooglePlacesAPI struct {
+type GooglePhotosAPI struct {
 	client *http.Client
 
 	key string
 }
 
-func NewGooglePlacesAPI(key string) *GooglePlacesAPI {
-	return &GooglePlacesAPI{
+func NewGooglePhotosAPI(key string) *GooglePhotosAPI {
+	return &GooglePhotosAPI{
 		client: http.DefaultClient,
 		key:    key,
 	}
 }
 
-func (api *GooglePlacesAPI) FetchReportData(ctx context.Context, hotelName string) (*weatherservice.DataToReport[weatherservice.HotelsPhotos], error) {
-	hotelSearch, err := api.searchHotel(ctx, hotelName)
-	if err != nil {
-		return nil, err
-	}
+func (api *GooglePhotosAPI) FetchReportData(ctx context.Context, hotelName ...string) (*weatherservice.DataToReport[weatherservice.HotelsPhotos], error) {
+	hotelPhotos := make(weatherservice.HotelsPhotos, len(hotelName))
 
-	if len(hotelSearch.Places) == 0 {
-		return nil, nil
-	}
+	for i, place := range hotelName {
+		params := url.Values{}
+		params.Add("key", api.key)
 
-	hotelPhotos := make(weatherservice.HotelsPhotos, len(hotelSearch.Places))
+		photoUrl := fmt.Sprintf(googlePhotosURL, place, api.key)
 
-	for i, place := range hotelSearch.Places {
-		if !strings.Contains(strings.ToLower(place.DisplayName.Text), strings.ToLower(hotelName)) {
-			continue
+		req, err := http.NewRequest("GET", photoUrl, nil)
+		if err != nil {
+			return nil, err
 		}
 
-		hotelPhotos[i].HotelName = hotelName
-
-		for _, photo := range place.Photos {
-			photoId := photo.Name
-
-			params := url.Values{}
-			params.Add("key", api.key)
-
-			photoUrl := fmt.Sprintf(googlePhotosURL, photoId, api.key)
-
-			req, err := http.NewRequest("GET", photoUrl, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			resp, err := api.client.Do(req)
-			if err != nil {
-				return nil, err
-			}
-
-			defer func() {
-				_ = resp.Body.Close()
-			}()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return nil, err
-			}
-
-			img := base64.StdEncoding.EncodeToString(body)
-
-			hotelPhotos[i].HotelPhotos = append(hotelPhotos[i].HotelPhotos, img)
+		resp, err := api.client.Do(req)
+		if err != nil {
+			return nil, err
 		}
+
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		img := base64.StdEncoding.EncodeToString(body)
+
+		hotelPhotos[i].HotelPhotos = append(hotelPhotos[i].HotelPhotos, img)
 	}
 
 	return &weatherservice.DataToReport[weatherservice.HotelsPhotos]{
@@ -100,51 +78,12 @@ func (api *GooglePlacesAPI) FetchReportData(ctx context.Context, hotelName strin
 		return nil, nil*/
 }
 
-func (api *GooglePlacesAPI) FetchGeneralInfo(ctx context.Context, _ string) (*weatherservice.DataToReport[weatherservice.HotelsPhotos], error) {
+func (api *GooglePhotosAPI) FetchGeneralInfo(ctx context.Context, _ ...string) (*weatherservice.DataToReport[weatherservice.HotelsPhotos], error) {
 	return nil, nil
 }
 
 type SearchRequest struct {
 	TextQuery string `json:"textQuery"`
-}
-
-func (api *GooglePlacesAPI) searchHotel(ctx context.Context, hotelName string) (*response, error) {
-	searchReq := SearchRequest{
-		TextQuery: hotelName,
-	}
-
-	// Marshal the request body to JSON
-	jsonData, err := json.Marshal(searchReq)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a new HTTP request
-	req, err := http.NewRequest("POST", googlePlaceMapTextSearchURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Goog-Api-Key", api.key)
-	req.Header.Set("X-Goog-FieldMask", "places")
-
-	resp, err := api.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	var response *response
-	err = json.NewDecoder(resp.Body).Decode(&response)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
 }
 
 type RoutingSummary struct {

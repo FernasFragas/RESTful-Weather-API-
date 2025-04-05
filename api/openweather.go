@@ -25,8 +25,8 @@ func NewWeatherAPI(key string) *WeatherAPI {
 	}
 }
 
-func (api *WeatherAPI) FetchReportData(ctx context.Context, city string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
-	weather, err := api.fetchLocationInfo(ctx, city)
+func (api *WeatherAPI) FetchReportData(ctx context.Context, city ...string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
+	weather, err := api.fetchLocationInfo(ctx, city[0])
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +53,8 @@ func (api *WeatherAPI) FetchReportData(ctx context.Context, city string) (*weath
 	}, nil
 }
 
-func (api *WeatherAPI) FetchGeneralInfo(ctx context.Context, city string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
-	generalInfo, err := api.fetchLocationInfo(ctx, city)
+func (api *WeatherAPI) FetchGeneralInfo(ctx context.Context, city ...string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
+	generalInfo, err := api.fetchLocationInfo(ctx, city[0])
 	if err != nil {
 		return nil, err
 	}

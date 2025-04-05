@@ -25,12 +25,12 @@ func NewMarkcorpsAPI(apiKey string) *MarkcorpsAPI {
 	}
 }
 
-func (api *MarkcorpsAPI) FetchReportData(ctx context.Context, city string) (*weatherservice.DataToReport[weatherservice.Hotels], error) {
+func (api *MarkcorpsAPI) FetchReportData(ctx context.Context, city ...string) (*weatherservice.DataToReport[weatherservice.Hotels], error) {
 	if api.client == nil {
 		return nil, fmt.Errorf("client not initialized")
 	}
 
-	locations, err := api.fetchLocationData(ctx, city)
+	locations, err := api.fetchLocationData(ctx, city[0])
 	if err != nil {
 		return nil, err
 	}

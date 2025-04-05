@@ -27,12 +27,12 @@ func NewStormGlassAPI(key string) *StormGlassAPI {
 	}
 }
 
-func (api *StormGlassAPI) FetchReportData(ctx context.Context, city string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
+func (api *StormGlassAPI) FetchReportData(ctx context.Context, city ...string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
 	if api.client == nil {
 		return nil, fmt.Errorf("client not initialized")
 	}
 
-	coordinates := strings.Split(city, ",")
+	coordinates := strings.Split(city[0], ",")
 
 	// Create the request
 	req, err := http.NewRequest("GET", stormGlassWebhookURL, nil)
