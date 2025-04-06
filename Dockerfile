@@ -22,6 +22,8 @@ FROM gcr.io/distroless/static:nonroot
 
 # Copy only the binary
 COPY --from=builder /app/bin/app /app/bin/app
+COPY --from=builder /app/views /app/views  # <-- THIS is needed
+COPY --from=builder /app/public /app/public  # Optional: for your static files
 
 # Set working directory and expose port
 WORKDIR /app
