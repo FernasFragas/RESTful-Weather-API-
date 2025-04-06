@@ -19,8 +19,8 @@ body {
 /* Background and container */
 .macos-bg {
     background: #2c3e50;
-    background-image: linear-gradient(135deg, rgba(54, 110, 176, 0.7) 0%, rgba(44, 62, 80, 0.8) 100%), url('/cloudy.jpg');
-    background-image: -webkit-linear-gradient(135deg, rgba(54, 110, 176, 0.7) 0%, rgba(44, 62, 80, 0.8) 100%), url('/cloudy.jpg');
+    background-image: linear-gradient(135deg, rgba(90, 140, 190, 0.7) 0%, rgba(44, 62, 80, 0.8) 100%), url('/cloudy.jpg');
+    background-image: -webkit-linear-gradient(135deg, rgba(90, 140, 190, 0.7) 0%, rgba(44, 62, 80, 0.8) 100%), url('/cloudy.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

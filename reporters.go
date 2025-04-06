@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+const weatherEmbedURL = "https://embed.windy.com/embed2.html?lat=%f&lon=%f&zoom=23&level=surface&overlay=satellite"
+
 type ReporterProvider[T any] interface {
 	FetchReportData(ctx context.Context, _ ...string) (*DataToReport[T], error)
 	FetchGeneralInfo(ctx context.Context, _ ...string) (*DataToReport[T], error)
@@ -73,7 +75,7 @@ func (s *WeatherReporters) GenerateReport(ctx context.Context, city string) (*Ge
 		Lon:      weatherInfo.Data.Lon,
 		Waves:    waveInfo.Data.Waves,
 		Weather:  weatherInfo.Data.Weather,
-		EmbedURL: fmt.Sprintf("https://embed.windy.com/embed2.html?lat=%f&lon=%f&zoom=11&level=surface&overlay=wind", weatherInfo.Data.Lat, weatherInfo.Data.Lon),
+		EmbedURL: fmt.Sprintf(weatherEmbedURL, weatherInfo.Data.Lat, weatherInfo.Data.Lon),
 	}, nil
 
 }
@@ -139,15 +141,15 @@ func (s *HotelsApi) GenerateReport(ctx context.Context, city string) (*Hotels, e
 	data := make(Hotels, len(hotels.Data))
 
 	for i, hotel := range hotels.Data {
-		for _, photo := range hotel.HotelPhotos {
-			hotelsPhotos, err := s.photosAPI.FetchReportData(ctx, photo)
-			if err != nil {
-				return nil, err
-			}
+		hotelsPhotos := make(chan []string, len(hotel.HotelPhotos))
 
-			if len(hotelsPhotos.Data) > 0 {
-				data[i].HotelPhotos = append(data[i].HotelPhotos, hotelsPhotos.Data[0].HotelPhotos...)
-			}
+		for _, photo := range hotel.HotelPhotos {
+			go s.retrieveHotelPhotos(ctx, photo, hotelsPhotos)
+		}
+
+		for range hotel.HotelPhotos {
+			photos := <-hotelsPhotos
+			data[i].HotelPhotos = append(data[i].HotelPhotos, photos...)
 		}
 
 		data[i].HotelName = hotel.HotelName
@@ -158,9 +160,20 @@ func (s *HotelsApi) GenerateReport(ctx context.Context, city string) (*Hotels, e
 		data[i].HotelMapURL = hotel.HotelMapURL
 		data[i].ContactPhone = hotel.ContactPhone
 		data[i].PriceRange = hotel.PriceRange
+		data[i].HotelReviews = hotel.HotelReviews
 	}
 
 	return &data, nil
+}
+
+func (s *HotelsApi) retrieveHotelPhotos(ctx context.Context, hotelName string, hotelsPhotos chan []string) error {
+	photo, err := s.photosAPI.FetchReportData(ctx, hotelName)
+	if err != nil {
+		return err
+	}
+
+	hotelsPhotos <- photo.Data[0].HotelPhotos
+	return nil
 }
 
 type HotelsPhotos []HotelPhoto
