@@ -5,6 +5,15 @@
             <!-- Hotel Header Section -->
             <div class="hotel-header">
                 <h2>{{ .HotelName }}</h2>
+
+            <!-- Hotel URL -->
+            {{ if .HotelURL }}
+            <a href="{{ .HotelURL }}" target="_blank" class="hotel-link">
+                <i class="fas fa-external-link-alt"></i>
+                {{ .HotelName}}
+            </a>
+            {{ end }}
+
                 {{ if .HotelRating }}
                 <div class="rating">
                     <span>{{ .HotelRating }} ★</span>
@@ -46,14 +55,6 @@
                     {{ end }}
                 </div>
             </div>
-            {{ end }}
-
-            <!-- Hotel URL -->
-            {{ if .HotelURL }}
-            <a href="{{ .HotelURL }}" target="_blank" class="hotel-link">
-                <i class="fas fa-external-link-alt"></i>
-                Visit Website
-            </a>
             {{ end }}
         </div>
         {{ end }}
