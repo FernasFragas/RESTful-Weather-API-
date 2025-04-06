@@ -130,16 +130,20 @@ body {
 
 /* Hotel cards */
 .hotel-card {
-    width: 100%;
-    margin-bottom: 1.5rem;
-    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
     background: rgba(255, 255, 255, 0.12);
     border-radius: 16px;
+    padding: 1.5rem;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     color: white;
     transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .hotel-card:hover {
@@ -158,7 +162,7 @@ body {
 
 /* Hotel images container */
 .hotel-card .image-scroll {
-    width: 100%;
+    display: flex;
     overflow-x: auto;
     white-space: nowrap;
     margin: 1rem 0;
@@ -171,8 +175,9 @@ body {
 /* Hotel images */
 .hotel-card img {
     display: inline-block;
-    width: 200px;
-    height: 150px;
+    width: 100%;
+    max-width: 200px;
+    height: auto;
     object-fit: cover;
     border-radius: 12px;
     margin-right: 15px;
@@ -252,12 +257,15 @@ body {
     }
 
     .hotel-card {
-        padding: 20px;
+        padding: 1rem;
     }
 
     .hotel-card img {
-        width: 180px;
-        height: 135px;
+        max-width: 180px;
+    }
+
+    .hotel-card h2 {
+        font-size: 1.25rem;
     }
 }
 
@@ -276,16 +284,15 @@ body {
     }
 
     .hotel-card {
-        padding: 15px;
+        padding: 0.75rem;
     }
 
     .hotel-card img {
-        width: 160px;
-        height: 120px;
+        max-width: 160px;
     }
 
     .hotel-card h2 {
-        font-size: 1.25rem;
+        font-size: 1.1rem;
     }
 }
 
