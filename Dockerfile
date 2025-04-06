@@ -17,7 +17,8 @@ COPY . .
 RUN go build -o /app/bin/app ./cmd/web
 
 # ---------- Final Stage ----------
-FROM scratch
+FROM gcr.io/distroless/static:nonroot
+
 
 # Copy only the binary
 COPY --from=builder /app/bin/app /app/bin/app
