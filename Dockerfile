@@ -1,32 +1,29 @@
-   # Use the official Golang image as a build stage
-   FROM golang:1.21 as builder
+# Use the official Golang image as a build stage
+FROM golang:1.23.7 as builder
 
-   # Set the working directory inside the container
-   WORKDIR /app
+# Disable CGO for a static binary (no glibc required)
+ENV CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
 
-   # Copy go.mod and go.sum files
-   COPY go.mod go.sum ./
+WORKDIR /app
 
-   # Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
-   RUN go mod download
+COPY go.mod go.sum ./
+RUN go mod download
 
-   # Copy the source code into the container
-   COPY . .
+COPY . .
 
-   # Build the Go app
-   RUN go build -o /app/bin/app ./cmd/web
+# Build static binary
+RUN go build -o /app/bin/app ./cmd/web
 
-   # Use a more recent Debian image for the final stage
-   FROM debian:bullseye-slim
+# ---------- Final Stage ----------
+FROM scratch
 
-   # Install necessary packages
-   RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+# Copy only the binary
+COPY --from=builder /app/bin/app /app/bin/app
 
-   # Copy the binary from the builder stage
-   COPY --from=builder /app/bin/app /app/bin/app
+# Set working directory and expose port
+WORKDIR /app
+EXPOSE 8080
 
-   # Expose the port the app runs on
-   EXPOSE 8080
-
-   # Command to run the executable
-   CMD ["/app/bin/app"]
+CMD ["/app/bin/app"]
