@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"fmt"
 
+	"github.com/gofiber/contrib/fgprof"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/template/html/v2"
@@ -34,6 +35,8 @@ func NewAppServer(weatherReporters Reporter[GeneralWeatherInfo], videoStreamRepo
 	app := fiber.New(fiber.Config{
 		Views: html.New("./views", ".go.tpl"),
 	})
+
+	app.Use(fgprof.New())
 
 	// Use the session middleware
 	app.Use(func(ctx *fiber.Ctx) error {
