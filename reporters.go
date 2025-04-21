@@ -130,7 +130,13 @@ type Hotel struct {
 	ContactPhone string
 	PriceRange   string
 	HotelPhotos  []string
-	HotelReviews []string
+	HotelReviews []HotelReview
+}
+
+type HotelReview struct {
+	AuthorName string
+	Text       string
+	Rating     float64
 }
 
 func (s *HotelsApi) GenerateReport(ctx context.Context, city string) (*Hotels, error) {

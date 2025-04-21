@@ -51,9 +51,13 @@ func (api *GooglePlacesAPI) FetchReportData(ctx context.Context, CityName ...str
 			photos[j] = photo.Name
 		}
 
-		reviews := make([]string, len(place.Reviews))
+		reviews := make([]weatherservice.HotelReview, len(place.Reviews))
 		for j, review := range place.Reviews {
-			reviews[j] = review.Text.Text
+			reviews[j] = weatherservice.HotelReview{
+				AuthorName: review.AuthorAttribution.DisplayName,
+				Text:       review.Text.Text,
+				Rating:     review.Rating,
+			}
 		}
 
 		hotels[i] = weatherservice.Hotel{
@@ -168,8 +172,9 @@ type DisplayName struct {
 }
 
 type ReviewPlaces struct {
-	Text   LocalizedText `json:"text"`
-	Rating float64       `json:"rating"`
+	Text              LocalizedText     `json:"text"`
+	Rating            float64           `json:"rating"`
+	AuthorAttribution AuthorAttribution `json:"authorAttribution"`
 }
 
 func (api *GooglePlacesAPI) FetchGeneralInfo(ctx context.Context, city ...string) (*weatherservice.DataToReport[weatherservice.Hotels], error) {

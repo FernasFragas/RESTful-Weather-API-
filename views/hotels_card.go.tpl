@@ -45,7 +45,13 @@
                 <h3>Reviews</h3>
                 <div class="reviews-container">
                     {{ range .HotelReviews }}
-                    <div class="review">{{ . }}</div>
+                    <div class="review">
+                        <div class="review-header">
+                            <h4>{{ .AuthorName }}</h4>
+                            <span class="review-rating">{{ .Rating }} ★</span>
+                        </div>
+                        <p class="review-text">{{ .Text }}</p>
+                    </div>
                     {{ end }}
                 </div>
             </div>
