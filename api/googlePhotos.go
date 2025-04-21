@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 	"weatherservice"
 )
 
@@ -26,37 +27,39 @@ func NewGooglePhotosAPI(key string) *GooglePhotosAPI {
 	}
 }
 
+type hotelPhotoResult struct {
+	idx       int
+	photoUrls string
+}
+
 func (api *GooglePhotosAPI) FetchReportData(ctx context.Context, hotelName ...string) (*weatherservice.DataToReport[weatherservice.HotelsPhotos], error) {
 	hotelPhotos := make(weatherservice.HotelsPhotos, len(hotelName))
+
+	wg := sync.WaitGroup{}
+
+	photoUrls := make(chan hotelPhotoResult, len(hotelName))
 
 	for i, place := range hotelName {
 		params := url.Values{}
 		params.Add("key", api.key)
 
-		photoUrl := fmt.Sprintf(googlePhotosURL, place, api.key)
+		// introduce grorutines with buffered channel and wait group
+		wg.Add(1)
+		go func(hotelName string, index int, photoUrlsch chan<- hotelPhotoResult) {
+			defer wg.Done()
+			api.getImageFromGooglePlaces(hotelName, index, photoUrlsch)
+		}(place, i, photoUrls)
+	}
 
-		req, err := http.NewRequest("GET", photoUrl, nil)
-		if err != nil {
-			return nil, err
-		}
+	// goroutine to wait for all the responses and close the channel
+	go func() {
+		wg.Wait()
+		close(photoUrls)
+	}()
 
-		resp, err := api.client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-
-		defer func() {
-			_ = resp.Body.Close()
-		}()
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-
-		img := base64.StdEncoding.EncodeToString(body)
-
-		hotelPhotos[i].HotelPhotos = append(hotelPhotos[i].HotelPhotos, img)
+	// add the response of each goroutine to the hotelPhotos
+	for img := range photoUrls {
+		hotelPhotos[img.idx].HotelPhotos = append(hotelPhotos[img.idx].HotelPhotos, img.photoUrls)
 	}
 
 	return &weatherservice.DataToReport[weatherservice.HotelsPhotos]{
@@ -76,6 +79,38 @@ func (api *GooglePhotosAPI) FetchReportData(ctx context.Context, hotelName ...st
 		}
 
 		return nil, nil*/
+}
+
+func (api *GooglePhotosAPI) getImageFromGooglePlaces(place string, index int, out chan<- hotelPhotoResult) error {
+	photoUrl := fmt.Sprintf(googlePhotosURL, place, api.key)
+
+	req, err := http.NewRequest("GET", photoUrl, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := api.client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	img := base64.StdEncoding.EncodeToString(body)
+
+	out <- hotelPhotoResult{
+		idx:       index,
+		photoUrls: img,
+	}
+
+	return nil
 }
 
 func (api *GooglePhotosAPI) FetchGeneralInfo(ctx context.Context, _ ...string) (*weatherservice.DataToReport[weatherservice.HotelsPhotos], error) {

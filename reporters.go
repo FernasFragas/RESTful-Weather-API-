@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 )
 
 const weatherEmbedURL = "https://embed.windy.com/embed2.html?lat=%f&lon=%f&zoom=23&level=surface&overlay=satellite"
@@ -143,12 +144,21 @@ func (s *HotelsApi) GenerateReport(ctx context.Context, city string) (*Hotels, e
 	for i, hotel := range hotels.Data {
 		hotelsPhotos := make(chan []string, len(hotel.HotelPhotos))
 
+		wg := sync.WaitGroup{}
 		for _, photo := range hotel.HotelPhotos {
-			go s.retrieveHotelPhotos(ctx, photo, hotelsPhotos)
+			wg.Add(1)
+			go func(pic string) {
+				defer wg.Done()
+				s.retrieveHotelPhotos(ctx, pic, hotelsPhotos)
+			}(photo)
 		}
 
-		for range hotel.HotelPhotos {
-			photos := <-hotelsPhotos
+		go func() {
+			wg.Wait()
+			close(hotelsPhotos)
+		}()
+
+		for photos := range hotelsPhotos {
 			data[i].HotelPhotos = append(data[i].HotelPhotos, photos...)
 		}
 
@@ -173,6 +183,7 @@ func (s *HotelsApi) retrieveHotelPhotos(ctx context.Context, hotelName string, h
 	}
 
 	hotelsPhotos <- photo.Data[0].HotelPhotos
+
 	return nil
 }
 
