@@ -89,7 +89,7 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 
 	videos, err := s.videoStreamReporters.GenerateReport(ctx.Context(), fmt.Sprintf("Turistic places in %s, %s", city, generalInfo.Country))
 	if err != nil {
-		return err
+		videos = &VideosStream{}
 	}
 
 	err = sess.Save()
