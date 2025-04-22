@@ -52,33 +52,59 @@ body {
     width: 100%;
 }
 
-.form-container input[type="text"] {
+/* Increase specificity to override Bootstrap potentially */
+.form-container input[type="text"].form-control {
     flex: 1;
     padding: 10px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.1);
-    color: #0A2342;
+    color: yellow !important;
     font-size: 16px;
 }
 
-.form-container input[type="text"]::placeholder {
-    color: rgba(255, 255, 255, 0.7);
+.form-container input[type="text"].form-control::placeholder {
+    color: rgba(255, 255, 0, 0.7) !important;
 }
 
-.btn-primary {
+/* Increase specificity */
+.form-container .btn.btn-primary {
     padding: 10px 20px;
     background: rgba(255, 255, 255, 0.2);
-    color: white;
+    color: yellow !important;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
-.btn-primary:hover {
+/* Increase specificity */
+.form-container .btn.btn-primary:hover {
     background: rgba(255, 255, 255, 0.3);
     transform: translateY(-1px);
+}
+
+/* HTMX Loading Indicator */
+.htmx-indicator {
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+    color: yellow; /* Match button/input text color */
+}
+
+/* Target the icon within the indicator */
+.htmx-indicator i {
+    font-size: 1.5em; /* Make the spinner 50% larger */
+    vertical-align: middle; /* Helps align it with text */
+}
+
+/* Show indicator during request (added to the element triggering the request) */
+.htmx-request .htmx-indicator {
+    opacity: 1;
+}
+
+/* Optional: If the button itself gets the htmx-request class */
+.htmx-request.htmx-indicator {
+    opacity: 1;
 }
 
 /* Weather card */

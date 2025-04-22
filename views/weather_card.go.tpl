@@ -12,6 +12,28 @@
             <p><i class="fas fa-water"></i> Waves Height: {{ .GeneralInfo.Waves.Height }}m</p>
         </div>
     </div>
+
+    <!-- Script to set background based on condition (runs on load/swap) -->
+    <script>
+        (function() { 
+            let weatherCard = document.currentScript.parentElement; // The script is inside the weather-card div
+            let condition = "{{ .GeneralInfo.Weather.Condition }}".toLowerCase();
+
+            if (weatherCard && weatherCard.classList.contains('weather-card')) {
+                let imageUrl = '/default.jpg'; // Default image
+                if (condition.includes("sun")) {
+                    imageUrl = '/sunny.jpg';
+                } else if (condition.includes("cloud")) {
+                    imageUrl = '/cloudy.jpg';
+                } else if (condition.includes("rain")) {
+                    imageUrl = '/rainny.jpg';
+                } else if (condition.includes("storm")) {
+                    imageUrl = '/stormy.jpg';
+                }
+                weatherCard.style.backgroundImage = `url('${imageUrl}')`;
+            }
+        })();
+    </script>
 </div>
 
 <style>

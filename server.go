@@ -62,7 +62,7 @@ func NewAppServer(weatherReporters Reporter[GeneralWeatherInfo], videoStreamRepo
 
 	app.Get("/videos", server.listVideoStreamInfo)
 
-	app.Post("/process-form/:CityName", server.listGeneralInfo)
+	app.Get("/process-form/", server.listGeneralInfo)
 
 	return server
 }
@@ -94,15 +94,30 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 
 	err = sess.Save()
 	if err != nil {
-		return err
+		// Consider logging this error but maybe not returning it to the client
+		fmt.Println("Session save error:", err)
 	}
 
 	hotels, err := s.hotelsApi.GenerateReport(ctx.Context(), fmt.Sprintf("%f,%f", generalInfo.Lat, generalInfo.Lon))
 	if err != nil {
-		return err
+		// Handle hotel error appropriately, maybe return an empty list or log
+		hotels = &Hotels{}
 	}
 
-	return ctx.Render("index", map[string]any{"GeneralInfo": generalInfo, "Videos": videos, "Hotels": hotels})
+	data := map[string]any{
+		"GeneralInfo": generalInfo,
+		"Videos":      videos,
+		"Hotels":      hotels,
+	}
+
+	// Check if it's an HTMX request
+	if ctx.Get("HX-Request") == "true" {
+		// Render only the content fragment for HTMX requests
+		return ctx.Render("content_fragment", data)
+	}
+
+	// Render the full page for regular requests
+	return ctx.Render("index", data)
 }
 
 func (s *Server) listVideoStreamInfo(ctx *fiber.Ctx) error {
