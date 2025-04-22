@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>🌤️Weather Service</title>
+    <title>✈🌤️TravelTab</title>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -49,14 +49,17 @@
     <div class="glass-container">
         <div class="container-fluid p-4">
             <div class="row justify-content-center">
+                <img src="/traveltab.png" alt="TravelTab Logo" style="  width: 15%;  
+                    max-height: 10%; 
+                    object-fit: contain;"> 
                 <!-- Search Form -->
                 <div class="col-12 mb-4">
-                    <div class="form-container">
-                        <form action="/process-form/:CityName" method="POST">
-                            <input type="text" name="city_name" placeholder="Search for City..." id="city_name" class="form-control" required>
-                            <input type="submit" value="Search" class="btn btn-primary">
-                        </form>
-                    </div>
+                     <div class="form-container">
+                            <form action="/process-form/:CityName" method="POST">
+                                <input type="text" name="city_name" placeholder="Search for City..." id="city_name" class="form-control" required>
+                                <input type="submit" value="Search" class="btn btn-primary">
+                            </form>
+                        </div>
                 </div>
 
                 <!-- Weather Display -->
