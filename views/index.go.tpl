@@ -54,12 +54,12 @@
                     object-fit: contain;"> 
                 <!-- Search Form -->
                 <div class="col-12 mb-4">
-                     <div class="form-container">
-                            <form action="/process-form/:CityName" method="POST">
-                                <input type="text" name="city_name" placeholder="Search for City..." id="city_name" class="form-control" required>
-                                <input type="submit" value="Search" class="btn btn-primary">
-                            </form>
-                        </div>
+                    <div class="form-container">
+                        <form action="/process-form/:CityName" method="POST">
+                            <input type="text" name="city_name" placeholder="Search for City..." id="city_name" class="form-control" required>
+                            <input type="submit" value="Search" class="btn btn-primary">
+                        </form>
+                    </div>
                 </div>
 
                 <!-- Weather Display -->
