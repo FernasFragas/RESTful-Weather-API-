@@ -49,9 +49,14 @@
     <div class="glass-container">
         <div class="container-fluid p-4">
             <div class="row justify-content-center">
-                <img src="/traveltab.png" alt="TravelTab Logo" style="  width: 15%;  
-                    max-height: 10%; 
-                    object-fit: contain;"> 
+                <!-- Logo -->
+                <div class="col-auto text-center mb-3">
+                    <img src="/traveltab.png" alt="TravelTab Logo" style="    max-width: 33.33vw; /* One third of viewport width */
+                    max-height: 33.33vw;;  /* Maintain aspect ratio */
+                    display: block; /* Needed for auto margins to work */
+                    margin: 0 auto 1rem; /* Center horizontally, add bottom margin */
+                ">
+                </div>
                 <!-- Search Form -->
                 <div class="col-12 mb-4">
                     <div class="form-container">

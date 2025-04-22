@@ -441,11 +441,3 @@ body {
         background: rgba(255, 255, 255, 1);
     }
 }
-
-/* Logo next to form */
-.logo-img {
-  width: 1vw; /* Smaller width */
-  height: 1vw;   /* Maintain aspect ratio */
-  max-height: 1vw; /* Approximate max height (adjust as needed) */
-  object-fit: contain; /* Ensure image fits without distortion */
-}
