@@ -24,20 +24,18 @@
     RUN go build -o /app/bin/app ./cmd/web
     
     # ---------- Final Stage ----------
-    FROM debian:bullseye-slim
-    
-    RUN apt-get update && apt-get install -y ca-certificates libsqlite3-0 && rm -rf /var/lib/apt/lists/*
-    
-    COPY --from=builder /app/bin/app /app/bin/app
-    COPY --from=builder /app/views /app/views 
-    COPY --from=builder /app/public /app/public
-    # Copy bootstrap DB file (read-only copy)
-    COPY --from=builder /app/bootstrap_data/weather.db /app/bootstrap_data/weather.db
- 
-    
-    WORKDIR /app
-    EXPOSE 8080
-    
-    CMD ["/app/bin/app"]
+FROM debian:bullseye-slim
+
+RUN apt-get update && apt-get install -y ca-certificates libsqlite3-0 && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/bin/app /app/bin/app
+COPY --from=builder /app/views /app/views 
+COPY --from=builder /app/public /app/public 
+COPY --from=builder /app/bootstrap_data/weatherservice.db /data/weatherservice.db
+
+WORKDIR /app
+EXPOSE 8080
+
+CMD ["/app/bin/app"]
     
     
