@@ -30,7 +30,10 @@
     
     COPY --from=builder /app/bin/app /app/bin/app
     COPY --from=builder /app/views /app/views 
-    COPY --from=builder /app/public /app/public 
+    COPY --from=builder /app/public /app/public
+    # Copy bootstrap DB file (read-only copy)
+    COPY --from=builder /app/bootstrap_data/weather.db /app/bootstrap_data/weather.db
+ 
     
     WORKDIR /app
     EXPOSE 8080

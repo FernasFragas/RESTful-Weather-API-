@@ -11,10 +11,15 @@ primary_region = 'mad'
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = 'stop'
+  auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
+
+# Add a mount point for the persistent volume
+[mounts]
+  source="weather_data" # Name of the volume to be created
+  destination="/data"    # Path inside the container where the volume will be mounted
 
 [[vm]]
   memory = '1gb'
