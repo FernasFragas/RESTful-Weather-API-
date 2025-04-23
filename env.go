@@ -41,14 +41,14 @@ func LoadEnvKey() (weatherServiceKeys *WeatherServiceKeys) {
 	//weatherServiceKeys.MateoMaticsAuths.Username = os.Getenv("MATEOMATICS_USERNAME")
 	//	weatherServiceKeys.MateoMaticsAuths.Password = os.Getenv("MATEOMATICS_PASSWORD")
 
-	weatherServiceKeys.YoutubeAPIKey = os.Getenv("YOUTUBE_API_KEY")
+	weatherServiceKeys.YoutubeAPIKey = os.Getenv("YOUTUBE_NEW")
 
 	//	weatherServiceKeys.MarkcorpsAPIKey = os.Getenv("MARKCORPS_API_KEY")
 
 	//weatherServiceKeys.AmadeusID = os.Getenv("AMADEUS_ID")
 	//weatherServiceKeys.AmadeusSecret = os.Getenv("AMADEUS_CLIENT_SECRET")
 
-	weatherServiceKeys.GooglePlacesAPIKey = os.Getenv("GOOGLE_PLACES_API_KEY")
+	weatherServiceKeys.GooglePlacesAPIKey = os.Getenv("PLACES_API_NEW")
 
 	return weatherServiceKeys
 }

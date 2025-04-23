@@ -2,8 +2,11 @@ package weatherservice
 
 import (
 	"context"
+	"database/sql"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/gofiber/contrib/fgprof"
 	"github.com/gofiber/fiber/v2"
@@ -67,6 +70,11 @@ func NewAppServer(weatherReporters Reporter[GeneralWeatherInfo], videoStreamRepo
 	return server
 }
 
+// Initialize Database before starting server
+func (s *Server) InitializeDatabase(dbPath string) error {
+	return InitDB(dbPath)
+}
+
 func (s *Server) Listen(port string) error {
 	return s.app.Listen(port)
 }
@@ -81,6 +89,36 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	// --- BEGIN Cache Check ---
+	cachedJSON, err := GetCityData(city)
+	if err != nil && err != sql.ErrNoRows {
+		// Handle potential DB errors (other than not found)
+		log.Printf("Error checking cache for city %s: %v", city, err)
+		// Decide how to handle this - maybe proceed to fetch fresh data, or return an error
+		// For now, let's proceed to fetch fresh data, but log the error.
+	} else if err == nil {
+		// Cache hit!
+		log.Printf("Cache hit for city: %s", city)
+		var data map[string]any
+		if unmarshalErr := json.Unmarshal([]byte(cachedJSON), &data); unmarshalErr != nil {
+			log.Printf("Error unmarshaling cached data for city %s: %v", city, unmarshalErr)
+			// Data in DB is corrupted? Proceed to fetch fresh data.
+		} else {
+			data["GeneralInfo"] = generalInfo
+
+			// Successfully got data from cache
+			// Need to update session if necessary? Currently, session seems mostly for videos/generalInfo separately.
+			// Let's keep it simple and just render the cached data for now.
+			if ctx.Get("HX-Request") == "true" {
+				return ctx.Render("content_fragment", data)
+			}
+			return ctx.Render("index", data)
+		}
+	}
+	// --- END Cache Check (If cache miss or error, continue below) ---
+
+	log.Printf("Cache miss for city: %s. Fetching fresh data.", city)
 
 	ctx.Status(fiber.StatusOK)
 
@@ -101,7 +139,10 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 	hotels, err := s.hotelsApi.GenerateReport(ctx.Context(), fmt.Sprintf("%f,%f", generalInfo.Lat, generalInfo.Lon))
 	if err != nil {
 		// Handle hotel error appropriately, maybe return an empty list or log
+		fmt.Println("Error fetching hotels:", err)
 		hotels = &Hotels{}
+	} else {
+		fmt.Printf("Fetched %d hotels\n", len(*hotels))
 	}
 
 	data := map[string]any{
@@ -109,6 +150,13 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 		"Videos":      videos,
 		"Hotels":      hotels,
 	}
+
+	// Save the fetched data to the database
+	go func(cityToSave string, dataToSave map[string]any) {
+		if err := SaveCityData(cityToSave, dataToSave); err != nil {
+			log.Printf("Error saving data for city %s to DB: %v", cityToSave, err)
+		}
+	}(city, data) // Pass copies to the goroutine
 
 	// Check if it's an HTMX request
 	if ctx.Get("HX-Request") == "true" {

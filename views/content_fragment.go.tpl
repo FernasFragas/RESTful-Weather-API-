@@ -1,5 +1,11 @@
-{{ template "weather_display" . }}
+<div class="col-12 mb-4">
+    {{ template "weather_display" . }}
+</div>
 
-{{ template "video" . }}
+<div class="col-12 mb-4">
+    {{ template "video" . }}
+</div>
 
-{{ template "hotels_card" . }} 
+<div class="col-12 mb-4">
+    {{ template "hotels_card" . }}
+</div> 
