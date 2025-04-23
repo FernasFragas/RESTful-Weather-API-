@@ -2,7 +2,7 @@
 FROM golang:1.23.7 as builder
 
 # Disable CGO for a static binary (no glibc required)
-ENV CGO_ENABLED=0 \
+ENV CGO_ENABLED=1 \
     GOOS=linux \
     GOARCH=amd64
 
@@ -13,11 +13,16 @@ RUN go mod download
 
 COPY . .
 
+RUN apt-get update && apt-get install -y gcc libc6-dev
+
 # Build static binary
 RUN go build -o /app/bin/app ./cmd/web
 
 # ---------- Final Stage ----------
-FROM gcr.io/distroless/static:nonroot
+FROM debian:bullseye-slim
+
+RUN apt-get update && apt-get install -y ca-certificates libsqlite3-0 && rm -rf /var/lib/apt/lists/*
+
 
 
 # Copy only the binary
