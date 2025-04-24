@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
@@ -55,12 +56,14 @@ func SaveCityData(city string, data map[string]any) error {
 		return fmt.Errorf("error marshaling data to JSON: %w", err)
 	}
 
+	cityName := strings.ToLower(city)
+
 	// SQL statement to insert or replace data based on the primary key (city).
 	// Using REPLACE ensures that if the city already exists, its data is updated.
 	insertSQL := `REPLACE INTO city_data (city, data) VALUES (?, ?);`
 
 	// Execute the SQL statement.
-	_, err = db.Exec(insertSQL, city, string(jsonData))
+	_, err = db.Exec(insertSQL, cityName, string(jsonData))
 	if err != nil {
 		return fmt.Errorf("error saving data for city %s: %w", city, err)
 	}
@@ -78,8 +81,10 @@ func GetCityData(city string) (string, error) {
 
 	querySQL := `SELECT data FROM city_data WHERE city = ?;`
 
+	cityName := strings.ToLower(city)
+
 	var jsonData string
-	err := db.QueryRow(querySQL, city).Scan(&jsonData)
+	err := db.QueryRow(querySQL, cityName).Scan(&jsonData)
 	if err != nil {
 		// Don't wrap sql.ErrNoRows, return it directly so the caller can check for it.
 		if err == sql.ErrNoRows {
