@@ -31,7 +31,6 @@ RUN apt-get update && apt-get install -y ca-certificates libsqlite3-0 && rm -rf 
 COPY --from=builder /app/bin/app /app/bin/app
 COPY --from=builder /app/views /app/views 
 COPY --from=builder /app/public /app/public 
-COPY --from=builder /app/bootstrap_data/weatherservice.db /data/weatherservice.db
 
 WORKDIR /app
 EXPOSE 8080
