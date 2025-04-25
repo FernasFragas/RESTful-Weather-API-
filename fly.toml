@@ -18,7 +18,7 @@ primary_region = 'mad'
 
 # Add a mount point for the persistent volume
 [mounts]
-  source="weather_data" # Name of the volume to be created
+  source="weather_data_inc" # Name of the volume to be created
   destination="/data"    # Path inside the container where the volume will be mounted
 
 [[vm]]
