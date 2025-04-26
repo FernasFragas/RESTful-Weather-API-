@@ -161,11 +161,14 @@ body {
 .hotels-container {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem; /* Reduced gap slightly */
     padding: 1rem;
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
+    max-height: 60vh; /* Limit height to 60% of viewport */
+    overflow-y: auto; /* Enable vertical scroll if content overflows */
+    scroll-behavior: smooth;
 }
 
 .hotel-card {
@@ -315,6 +318,21 @@ body {
 
 .video-container::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.5); /* Darker thumb */
+    border-radius: 3px;
+}
+
+/* Add scrollbar styling for hotels-container */
+.hotels-container::-webkit-scrollbar {
+    width: 6px; /* Vertical scrollbar width */
+}
+
+.hotels-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1); /* Darker track */
+    border-radius: 3px;
+}
+
+.hotels-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.4); /* Darker thumb */
     border-radius: 3px;
 }
 
@@ -492,4 +510,29 @@ body {
     .form-container .btn.btn-primary:hover {
          background: #5a6268;
     }
+}
+
+/* Footer Styles */
+.site-footer {
+    text-align: center;
+    padding: 2rem 1rem 1rem; /* Add padding top/bottom */
+    margin-top: 1rem; /* Space above the footer */
+    color: rgba(0, 0, 0, 1);; /* Light gray text, matching cards */
+}
+
+.site-footer p {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.social-links a {
+    color: rgba(0, 0, 0, 1); /* Light gray icons/links */
+    text-decoration: none;
+    font-size: 1.4rem; /* Icon size */
+    margin: 0 0.5rem; /* Space between icons */
+    transition: color 0.2s ease;
+}
+
+.social-links a:hover {
+    color: rgba(0, 0, 0, 1); /* White on hover */
 }
