@@ -50,13 +50,16 @@
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .windy-map {
     width: 100%;
     height: 100%;
-    border: none;
-    background-color: transparent;
+    border-radius: 16px;
+    border: 10px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    background-color: grey;
 }
 
 /* Responsive adjustments */
