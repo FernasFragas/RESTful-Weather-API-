@@ -448,26 +448,48 @@ body {
 
 /* Fallbacks for older browsers */
 @supports not (backdrop-filter: blur(10px)) {
-    .glass-container,
-    .form-container,
-    .weather-card,
-    .video,
-    .hotel-card {
-        background: rgba(255, 255, 255, 0.9);
-        color: #333;
+    /* Use solid dark backgrounds approximating the modern look */
+    .glass-container {
+        /* No specific background needed if body/macos-bg is light */
     }
-
-    .hotel-card {
-        background: rgba(255, 255, 255, 0.95);
-        color: #333;
+    .form-container,
+    .video,
+    .hotel-card,
+    /* Include .weather-card if it exists and uses backdrop */
+    .weather-card 
+    {
+        background: #343a40; /* Solid dark gray fallback */
+        color: #f0f0f0; /* Light text fallback */
+        /* Remove backdrop-filter as it's not supported */
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 
     .hotel-card a {
-        background: rgba(0, 0, 0, 0.1);
-        color: #333;
+        /* Adjust link style for dark background fallback */
+        background: rgba(255, 255, 255, 0.1);
+        color: #f0f0f0;
     }
 
     .hotel-card:hover {
-        background: rgba(255, 255, 255, 1);
+        /* Adjust hover style */
+        background: #495057; /* Slightly lighter dark gray on hover */
+    }
+    
+    /* Ensure inputs/buttons in form have appropriate fallback */
+    .form-container input[type="text"].form-control {
+        background: #495057; /* Darker input bg */
+        color: #f0f0f0 !important;
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    .form-container input[type="text"].form-control::placeholder {
+         color: rgba(240, 240, 240, 0.7) !important;
+    }
+     .form-container .btn.btn-primary {
+        background: #6c757d; /* Gray button fallback */
+        color: #ffffff !important;
+    }
+    .form-container .btn.btn-primary:hover {
+         background: #5a6268;
     }
 }
