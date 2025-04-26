@@ -39,7 +39,7 @@ body {
 .form-container {
     width: 90%;
     max-width: 500px;
-    margin: 0 auto 2rem;
+    margin: 0 auto 1rem;
     padding: 15px;
     background: rgba(0, 0, 0, 0.3); /* Darker tint (matching hotel/video) */
     border-radius: 12px;

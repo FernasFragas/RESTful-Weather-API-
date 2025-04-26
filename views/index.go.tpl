@@ -79,17 +79,17 @@
                 <!-- Content Area to be updated by HTMX -->
                 <div id="content-area" class="col-12">
                     <!-- Weather Display -->
-                    <div class="col-12 mb-4">
+                    <div class="col-12 mb-1">
                         {{ template "weather_display" . }}
                     </div>
 
                     <!-- Videos Section -->
-                    <div class="col-12 mb-4">
+                    <div class="col-12 mb-1">
                         {{ template "video" . }}
                     </div>
 
                     <!-- Hotels Section -->
-                    <div class="col-12 mb-4">
+                    <div class="col-12 mb-1">
                         {{ template "hotels_card" . }}
                     </div>
                  </div> <!-- End of content-area -->
