@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-const weatherEmbedURL = "https://embed.windy.com/embed2.html?lat=%f&lon=%f&zoom=23&level=surface&overlay=satellite"
+const weatherEmbedURL = "https://embed.waze.com/iframe?zoom=10&lat=%f&lon=%f"
 
 type ReporterProvider[T any] interface {
 	FetchReportData(ctx context.Context, _ ...string) (*DataToReport[T], error)
