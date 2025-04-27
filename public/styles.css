@@ -19,7 +19,6 @@ body {
 
 /* Background and container */
 .macos-bg {
-    /* Set solid light gray background (from user edit) */
     background-color: white;
     /* Remove image properties */
     /* background-image: url('/clean.png'); */
@@ -29,7 +28,6 @@ body {
 }
 
 .glass-container {
-    /* Transparent container, background comes from .macos-bg */
     background: none;
     min-height: 100vh;
     padding: 20px;
@@ -468,7 +466,7 @@ body {
 @supports not (backdrop-filter: blur(10px)) {
     /* Use solid dark backgrounds approximating the modern look */
     .glass-container {
-        /* No specific background needed if body/macos-bg is light */
+        /* No specific background needed now because body/macos-bg is light */
     }
     .form-container,
     .video,
