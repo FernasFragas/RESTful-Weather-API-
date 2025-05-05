@@ -63,8 +63,6 @@ func NewAppServer(weatherReporters Reporter[GeneralWeatherInfo], videoStreamRepo
 
 	app.Get("/", server.listGeneralInfo)
 
-	app.Get("/videos", server.listVideoStreamInfo)
-
 	app.Get("/process-form/", server.listGeneralInfo)
 
 	return server
@@ -87,10 +85,36 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 
 	generalInfo, err := s.weatherReporters.GenerateReport(ctx.Context(), city)
 	if err != nil {
-		return err
+		log.Printf("Error Retriving New Weather data information", err)
 	}
 
 	// --- BEGIN Cache Check ---
+	var data map[string]any
+
+	if data, err = s.checkDatabase(generalInfo, city); err != nil {
+		log.Printf("Error Retriving search data information with error %s", err)
+
+		log.Printf("Cache miss for city: %s. Fetching fresh data.", city)
+
+		// fallback
+		if data, err = s.retireveFreshInformation(ctx, generalInfo, city); err != nil {
+			log.Printf("Error Retriving fresh information with error %s", err)
+		}
+	}
+
+	// Check if it's an HTMX request
+	if ctx.Get("HX-Request") == "true" {
+		// Render only the content fragment for HTMX requests
+		return ctx.Render("content_fragment", data)
+	}
+
+	// Render the full page for regular requests
+	return ctx.Render("index", data)
+}
+
+func (s *Server) checkDatabase(generalInfo *GeneralWeatherInfo, city string) (map[string]any, error) {
+	var data map[string]any
+
 	cachedJSON, err := GetCityData(city)
 	if err != nil && err != sql.ErrNoRows {
 		// Handle potential DB errors (other than not found)
@@ -100,46 +124,31 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 	} else if err == nil {
 		// Cache hit!
 		log.Printf("Cache hit for city: %s", city)
-		var data map[string]any
+
 		if unmarshalErr := json.Unmarshal([]byte(cachedJSON), &data); unmarshalErr != nil {
 			log.Printf("Error unmarshaling cached data for city %s: %v", city, unmarshalErr)
 			// Data in DB is corrupted? Proceed to fetch fresh data.
 		} else {
 			data["GeneralInfo"] = generalInfo
-
-			// Successfully got data from cache
-			// Need to update session if necessary? Currently, session seems mostly for videos/generalInfo separately.
-			// Let's keep it simple and just render the cached data for now.
-			if ctx.Get("HX-Request") == "true" {
-				return ctx.Render("content_fragment", data)
-			}
-			return ctx.Render("index", data)
 		}
 	}
-	// --- END Cache Check (If cache miss or error, continue below) ---
 
-	log.Printf("Cache miss for city: %s. Fetching fresh data.", city)
+	return data, nil
+}
 
+func (s *Server) retireveFreshInformation(ctx *fiber.Ctx, generalInfo *GeneralWeatherInfo, city string) (map[string]any, error) {
 	ctx.Status(fiber.StatusOK)
-
-	sess := ctx.Locals("session").(*session.Session)
-	sess.Set("GeneralInfo", generalInfo)
 
 	videos, err := s.videoStreamReporters.GenerateReport(ctx.Context(), fmt.Sprintf("Turistic places in %s, %s", city, generalInfo.Country))
 	if err != nil {
 		videos = &VideosStream{}
 	}
 
-	err = sess.Save()
-	if err != nil {
-		// Consider logging this error but maybe not returning it to the client
-		fmt.Println("Session save error:", err)
-	}
-
 	hotels, err := s.hotelsApi.GenerateReport(ctx.Context(), fmt.Sprintf("%f,%f", generalInfo.Lat, generalInfo.Lon))
 	if err != nil {
 		// Handle hotel error appropriately, maybe return an empty list or log
 		fmt.Println("Error fetching hotels:", err)
+
 		hotels = &Hotels{}
 	} else {
 		fmt.Printf("Fetched %d hotels\n", len(*hotels))
@@ -156,50 +165,11 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 		if err := SaveCityData(cityToSave, dataToSave); err != nil {
 			log.Printf("Error saving data for city %s to DB: %v", cityToSave, err)
 		}
-	}(city, data) // Pass copies to the goroutine
+	}(city, data)
 
-	// Check if it's an HTMX request
-	if ctx.Get("HX-Request") == "true" {
-		// Render only the content fragment for HTMX requests
-		return ctx.Render("content_fragment", data)
-	}
-
-	// Render the full page for regular requests
-	return ctx.Render("index", data)
-}
-
-func (s *Server) listVideoStreamInfo(ctx *fiber.Ctx) error {
-	query := ctx.FormValue("query")
-	if query == "" {
-		query = "windsurf"
-	}
-
-	videos, err := s.videoStreamReporters.GenerateReport(ctx.Context(), query)
 	if err != nil {
-		return err
+		return data, err
 	}
 
-	sess := ctx.Locals("session").(*session.Session)
-	sess.Set("Videos", videos)
-
-	generalInfo, ok := sess.Get("GeneralInfo").(GeneralWeatherInfo)
-	if !ok {
-		generalInfo = GeneralWeatherInfo{
-			City:    "Lisbon",
-			Country: "pt",
-			Lon:     -9.1393,
-			Lat:     38.7223,
-		}
-	}
-
-	err = sess.Save()
-	if err != nil {
-		return err
-	}
-
-	return ctx.Render("index", fiber.Map{
-		"Query":       query,
-		"Videos":      videos,
-		"GeneralInfo": generalInfo,
-	})
+	return data, nil
 }

@@ -27,7 +27,9 @@ func main() {
 	)
 
 	server := weatherservice.NewAppServer(reporters, videoStreamReporters, hotelsApi)
-	server.InitializeDatabase("/data/weatherservice.db")
+	if err := weatherservice.InitDB("/data/weatherservice.db"); err != nil {
+		log.Fatal(err)
+	}
 
 	err := server.Listen(port)
 	if err != nil {
