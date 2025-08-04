@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -78,7 +80,10 @@ func (api *GooglePlacesAPI) FetchReportData(ctx context.Context, CityName ...str
 }
 
 type nearbySearchRequest struct {
+	MaxResultCount      int                 `json:"maxResultCount"`
 	IncludedTypes       []string            `json:"includedTypes"`
+	ExcludedTypes       []string            `json:"excludedTypes"`
+	RankPreference      string              `json:"rankPreference"`
 	LocationRestriction locationRestriction `json:"locationRestriction"`
 }
 
@@ -98,14 +103,16 @@ type center struct {
 
 func (api *GooglePlacesAPI) searchHotels(ctx context.Context, latitude, longitude float64) (*PlacesResponse, error) {
 	searchReq := nearbySearchRequest{
-		IncludedTypes: []string{"hotel"}, // Matches the curl command exactly
+		IncludedTypes:  []string{"hotel"}, // Matches the curl command exactly
+		MaxResultCount: 8,
+		RankPreference: "POPULARITY",
 		LocationRestriction: locationRestriction{
 			Circle: circle{
 				Center: center{
 					Latitude:  latitude,
 					Longitude: longitude,
 				},
-				Radius: 500.0, // Matches the radius in the curl command
+				Radius: 5000.0, // Matches the radius in the curl command
 			},
 		},
 	}
@@ -134,6 +141,17 @@ func (api *GooglePlacesAPI) searchHotels(ctx context.Context, latitude, longitud
 	defer func() {
 		_ = resp.Body.Close()
 	}()
+
+	// Check if response is not successful
+	if resp.StatusCode != http.StatusOK {
+		// Read the error response body
+		var errorBody []byte
+		errorBody, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("HTTP %d: failed to read error body", resp.StatusCode)
+		}
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(errorBody))
+	}
 
 	var response *PlacesResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)

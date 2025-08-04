@@ -77,6 +77,13 @@ func (s *Server) Listen(port string) error {
 	return s.app.Listen(port)
 }
 
+type TemplateData struct {
+	Query       string
+	Videos      VideosStream
+	GeneralInfo GeneralWeatherInfo
+	Hotels      Hotels
+}
+
 func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 	city := ctx.FormValue("city_name") // retrieves the name passed in the form
 	if city == "" {
@@ -89,31 +96,41 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 	}
 
 	// --- BEGIN Cache Check ---
-	var data map[string]any
+	var data TemplateData
 
-	if data, err = s.checkDatabase(generalInfo, city); err != nil {
+	if data, err = s.checkDatabase(city); err != nil {
 		log.Printf("Error Retriving search data information with error %s", err)
 
 		log.Printf("Cache miss for city: %s. Fetching fresh data.", city)
 
-		// fallback
-		if data, err = s.retireveFreshInformation(ctx, generalInfo, city); err != nil {
-			log.Printf("Error Retriving fresh information with error %s", err)
+		data, err = s.retireveFreshInformation(ctx, generalInfo, city)
+		if err != nil {
+			log.Printf("Error Retriving fresh data information with error %s", err)
 		}
 	}
 
 	// Check if it's an HTMX request
 	if ctx.Get("HX-Request") == "true" {
 		// Render only the content fragment for HTMX requests
-		return ctx.Render("content_fragment", data)
+		return ctx.Render("content_fragment", fiber.Map{
+			"Query":       city,
+			"GeneralInfo": data.GeneralInfo,
+			"Videos":      data.Videos,
+			"Hotels":      data.Hotels,
+		})
 	}
 
 	// Render the full page for regular requests
-	return ctx.Render("index", data)
+	return ctx.Render("index", fiber.Map{
+		"Query":       city,
+		"GeneralInfo": data.GeneralInfo,
+		"Videos":      data.Videos,
+		"Hotels":      data.Hotels,
+	})
 }
 
-func (s *Server) checkDatabase(generalInfo *GeneralWeatherInfo, city string) (map[string]any, error) {
-	var data map[string]any
+func (s *Server) checkDatabase(city string) (TemplateData, error) {
+	var data TemplateData
 
 	cachedJSON, err := GetCityData(city)
 	if err != nil && err != sql.ErrNoRows {
@@ -128,15 +145,15 @@ func (s *Server) checkDatabase(generalInfo *GeneralWeatherInfo, city string) (ma
 		if unmarshalErr := json.Unmarshal([]byte(cachedJSON), &data); unmarshalErr != nil {
 			log.Printf("Error unmarshaling cached data for city %s: %v", city, unmarshalErr)
 			// Data in DB is corrupted? Proceed to fetch fresh data.
-		} else {
-			data["GeneralInfo"] = generalInfo
 		}
+	} else {
+		return TemplateData{}, err
 	}
 
 	return data, nil
 }
 
-func (s *Server) retireveFreshInformation(ctx *fiber.Ctx, generalInfo *GeneralWeatherInfo, city string) (map[string]any, error) {
+func (s *Server) retireveFreshInformation(ctx *fiber.Ctx, generalInfo *GeneralWeatherInfo, city string) (TemplateData, error) {
 	ctx.Status(fiber.StatusOK)
 
 	videos, err := s.videoStreamReporters.GenerateReport(ctx.Context(), fmt.Sprintf("Turistic places in %s, %s", city, generalInfo.Country))
@@ -154,15 +171,21 @@ func (s *Server) retireveFreshInformation(ctx *fiber.Ctx, generalInfo *GeneralWe
 		fmt.Printf("Fetched %d hotels\n", len(*hotels))
 	}
 
-	data := map[string]any{
-		"GeneralInfo": generalInfo,
-		"Videos":      videos,
-		"Hotels":      hotels,
+	data := TemplateData{
+		GeneralInfo: *generalInfo,
+		Videos:      *videos,
+		Hotels:      *hotels,
 	}
 
 	// Save the fetched data to the database
-	go func(cityToSave string, dataToSave map[string]any) {
-		if err := SaveCityData(cityToSave, dataToSave); err != nil {
+	go func(cityToSave string, dataToSave TemplateData) {
+		dtToSave := map[string]any{
+			"GeneralInfo": dataToSave.GeneralInfo,
+			"Videos":      dataToSave.Videos,
+			"Hotels":      dataToSave.Hotels,
+		}
+
+		if err := SaveCityData(cityToSave, dtToSave); err != nil {
 			log.Printf("Error saving data for city %s to DB: %v", cityToSave, err)
 		}
 	}(city, data)
