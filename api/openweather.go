@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"weatherservice"
 )
 
 const openWeatherMapWebhookURL = "https://api.openweathermap.org/data/2.5/weather?"
+const openWeatherGeoLocationURL = "http://api.openweathermap.org/geo/1.0/direct?"
 
 type WeatherAPI struct {
 	client *http.Client
@@ -26,7 +28,17 @@ func NewWeatherAPI(key string) *WeatherAPI {
 }
 
 func (api *WeatherAPI) FetchReportData(ctx context.Context, city ...string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
-	weather, err := api.fetchLocationInfo(ctx, city[0])
+	toSearch := strings.Split(city[0], ",")
+	if len(toSearch) == 1 {
+		return nil, fmt.Errorf("city and country are required")
+	}
+	toSearch[0] = strings.TrimSpace(toSearch[0])
+	toSearch[1] = strings.TrimSpace(toSearch[1])
+	if toSearch[1] == "" {
+		toSearch[1] = "PT"
+	}
+
+	weather, err := api.fetchLocationInfo(ctx, toSearch[0], toSearch[1])
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +66,11 @@ func (api *WeatherAPI) FetchReportData(ctx context.Context, city ...string) (*we
 }
 
 func (api *WeatherAPI) FetchGeneralInfo(ctx context.Context, city ...string) (*weatherservice.DataToReport[weatherservice.GeneralWeatherInfo], error) {
-	generalInfo, err := api.fetchLocationInfo(ctx, city[0])
+	toSearch := strings.Split(city[0], ",")
+	toSearch[0] = strings.TrimSpace(toSearch[0])
+	toSearch[1] = strings.TrimSpace(toSearch[1])
+
+	generalInfo, err := api.fetchLocationInfo(ctx, toSearch[0], toSearch[1])
 	if err != nil {
 		return nil, err
 	}
@@ -69,15 +85,78 @@ func (api *WeatherAPI) FetchGeneralInfo(ctx context.Context, city ...string) (*w
 	}, nil
 }
 
-func (api *WeatherAPI) fetchLocationInfo(ctx context.Context, city string) (*weatherData, error) {
+type openWeatherRequestParams struct {
+	City    string
+	Country string
+	Lat     float64
+	Lon     float64
+}
+
+func (api *WeatherAPI) fetchLocationInfo(ctx context.Context, city string, country string) (*weatherData, error) {
 	if api.client == nil {
 		return nil, fmt.Errorf("client not initialized")
 	}
 
-	apiUrl, err := api.setupQueryParams(city)
+	coordinates, err := api.fetchCoordinates(ctx, city, country)
 	if err != nil {
 		return nil, err
 	}
+
+	weather, err := api.fetchWeather(ctx, *coordinates)
+	if err != nil {
+		return nil, err
+	}
+
+	weather.Name = city
+
+	return weather, nil
+}
+
+func (api *WeatherAPI) fetchCoordinates(ctx context.Context, city string, country string) (*Coordinates, error) {
+	requestParamsForCoordinates := openWeatherRequestParams{
+		City:    city,
+		Country: country,
+	}
+
+	queryParams, err := api.setupQueryParams(ctx, requestParamsForCoordinates)
+	if err != nil {
+		return nil, err
+	}
+
+	apiUrl := fmt.Sprintf("%s%s", openWeatherGeoLocationURL, queryParams.Encode())
+
+	resp, err := api.client.Get(apiUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	var coordinates GeocodingResponse
+
+	err = json.NewDecoder(resp.Body).Decode(&coordinates)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Coordinates{
+		Lon: coordinates[0].Lon,
+		Las: coordinates[0].Lat,
+	}, nil
+}
+
+func (api *WeatherAPI) fetchWeather(ctx context.Context, coordinates Coordinates) (*weatherData, error) {
+	queryParams, err := api.setupQueryParams(ctx, openWeatherRequestParams{
+		Lat: coordinates.Las,
+		Lon: coordinates.Lon,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	apiUrl := fmt.Sprintf("%s%s", openWeatherMapWebhookURL, queryParams.Encode())
 
 	resp, err := api.client.Get(apiUrl)
 	if err != nil {
@@ -98,19 +177,27 @@ func (api *WeatherAPI) fetchLocationInfo(ctx context.Context, city string) (*wea
 	return &weather, nil
 }
 
-func (api *WeatherAPI) setupQueryParams(city string) (string, error) {
+func (api *WeatherAPI) setupQueryParams(ctx context.Context, requestParams openWeatherRequestParams) (url.Values, error) {
 	if api.client == nil {
-		return "", fmt.Errorf("client not initialized")
+		return nil, fmt.Errorf("client not initialized")
 	}
 
 	queryParams := url.Values{}
-	queryParams.Add("q", city)
+	if requestParams.City != "" && requestParams.Country != "" && requestParams.Lat == 0 && requestParams.Lon == 0 {
+		locationToSearch := fmt.Sprintf("%s,%s", requestParams.City, requestParams.Country)
+
+		queryParams.Add("q", locationToSearch)
+	} else if requestParams.Lat != 0 && requestParams.Lon != 0 {
+		queryParams.Add("lat", fmt.Sprintf("%f", requestParams.Lat))
+		queryParams.Add("lon", fmt.Sprintf("%f", requestParams.Lon))
+	} else {
+		return nil, fmt.Errorf("invalid request parameters")
+	}
+
 	queryParams.Add("units", "metric")
 	queryParams.Add("APPID", api.key)
 
-	apiUrl := fmt.Sprintf("%s%s", openWeatherMapWebhookURL, queryParams.Encode())
-
-	return apiUrl, nil
+	return queryParams, nil
 }
 
 // unexported
@@ -149,4 +236,16 @@ type sys struct {
 
 type wind struct {
 	Speed float64 `json:"speed"`
+}
+
+// Geocoding API Response Structs
+type GeocodingResponse []GeocodingResult
+
+type GeocodingResult struct {
+	Name       string            `json:"name"`
+	LocalNames map[string]string `json:"local_names,omitempty"`
+	Lat        float64           `json:"lat"`
+	Lon        float64           `json:"lon"`
+	Country    string            `json:"country"`
+	State      string            `json:"state,omitempty"`
 }

@@ -67,7 +67,7 @@
                               hx-target="#content-area" 
                               hx-swap="innerHTML" 
                               hx-indicator=".htmx-indicator">
-                            <input type="text" name="city_name" placeholder="Search for City..." id="city_name" class="form-control" required>
+                            <input type="text" name="city_name" placeholder="Search like Lisbon, Portugal" id="city_name" class="form-control" required>
                             <input type="submit" value="Search" class="btn btn-primary">
                             <span class="htmx-indicator ms-2">
                                 <i class="fas fa-spinner fa-spin"></i>

@@ -112,7 +112,7 @@ func (api *GooglePlacesAPI) searchHotels(ctx context.Context, latitude, longitud
 					Latitude:  latitude,
 					Longitude: longitude,
 				},
-				Radius: 5000.0, // Matches the radius in the curl command
+				Radius: 9000.0, // Matches the radius in the curl command
 			},
 		},
 	}

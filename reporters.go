@@ -214,3 +214,15 @@ type FlightInfo struct {
 	Destination    string
 	FlightMapURL   string
 }
+
+// Geocoding API Response Structs
+type GeocodingResponse []GeocodingResult
+
+type GeocodingResult struct {
+	Name       string            `json:"name"`
+	LocalNames map[string]string `json:"local_names,omitempty"`
+	Lat        float64           `json:"lat"`
+	Lon        float64           `json:"lon"`
+	Country    string            `json:"country"`
+	State      string            `json:"state,omitempty"`
+}

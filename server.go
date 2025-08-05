@@ -85,15 +85,18 @@ type TemplateData struct {
 }
 
 func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
-	city := ctx.FormValue("city_name") // retrieves the name passed in the form
-	if city == "" {
-		city = "Lisbon"
+	cityAndCountry := ctx.FormValue("city_name") // retrieves the name passed in the form
+	if cityAndCountry == "" {
+		cityAndCountry = "Lisbon, Portugal"
 	}
 
-	generalInfo, err := s.weatherReporters.GenerateReport(ctx.Context(), city)
+	generalInfo, err := s.weatherReporters.GenerateReport(ctx.Context(), cityAndCountry)
 	if err != nil {
 		log.Printf("Error Retriving New Weather data information", err)
+		return ctx.SendStatus(fiber.StatusInternalServerError)
 	}
+
+	city := generalInfo.City
 
 	// --- BEGIN Cache Check ---
 	var data TemplateData
@@ -131,6 +134,10 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 
 func (s *Server) checkDatabase(city string) (TemplateData, error) {
 	var data TemplateData
+
+	if city == "" {
+		return TemplateData{}, fmt.Errorf("city is required")
+	}
 
 	cachedJSON, err := GetCityData(city)
 	if err != nil && err != sql.ErrNoRows {
