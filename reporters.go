@@ -226,3 +226,72 @@ type GeocodingResult struct {
 	Country    string            `json:"country"`
 	State      string            `json:"state,omitempty"`
 }
+
+type CoordinatesReporter struct {
+	api ReporterProvider[Coordinates]
+}
+
+func NewCoordinatesReporter(api ReporterProvider[Coordinates]) *CoordinatesReporter {
+	return &CoordinatesReporter{
+		api: api,
+	}
+}
+
+type Itenary struct {
+	Categories        []string
+	PlacesCoordinates []Coordinates
+	StartDate         string
+	EndDate           string
+	Location          string
+	Description       string
+	ImageURL          string
+	MapURL            string
+}
+
+type Coordinates struct {
+	CoordinatesWithName []CoordinatesWithName
+}
+
+type CoordinatesWithName struct {
+	Name             string
+	Coordinates      []interface{}
+	CoordinatesFloat []float64
+}
+
+func (s *CoordinatesReporter) GenerateReport(ctx context.Context, city string) (*Coordinates, error) {
+	coordinates, err := s.api.FetchReportData(ctx, city)
+	if err != nil {
+		return nil, err
+	}
+
+	coordinatesWithName := make([]CoordinatesWithName, len(coordinates.Data.CoordinatesWithName))
+
+	for i, coord := range coordinates.Data.CoordinatesWithName {
+		coordinatesFloat, err := parseCoordinates(coord.Coordinates)
+		if err != nil {
+			return nil, err
+		}
+
+		coordinatesWithName[i].CoordinatesFloat = coordinatesFloat
+		coordinatesWithName[i].Name = coord.Name
+		coordinatesWithName[i].Coordinates = coord.Coordinates
+	}
+
+	return &Coordinates{
+		CoordinatesWithName: coordinatesWithName,
+	}, nil
+}
+
+func parseCoordinates(coordinates []interface{}) ([]float64, error) {
+	coordinatesFloat := make([]float64, len(coordinates))
+
+	for i, coord := range coordinates {
+		coordFloat, ok := coord.(float64)
+		if !ok {
+			return nil, fmt.Errorf("invalid coordinate type: %T", coord)
+		}
+		coordinatesFloat[i] = coordFloat
+	}
+
+	return coordinatesFloat, nil
+}

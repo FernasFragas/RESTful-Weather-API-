@@ -16,6 +16,8 @@ type WeatherServiceKeys struct {
 	AmadeusID          string
 	AmadeusSecret      string
 	GooglePlacesAPIKey string
+	GeoapifyAPIKey     string
+	FoursquareAPIKey   string
 }
 
 type MateoMaticsSecrets struct {
@@ -49,6 +51,10 @@ func LoadEnvKey() (weatherServiceKeys *WeatherServiceKeys) {
 	//weatherServiceKeys.AmadeusSecret = os.Getenv("AMADEUS_CLIENT_SECRET")
 
 	weatherServiceKeys.GooglePlacesAPIKey = os.Getenv("PLACES_API_NEW")
+
+	weatherServiceKeys.GeoapifyAPIKey = os.Getenv("GEOAPIFY")
+
+	weatherServiceKeys.FoursquareAPIKey = os.Getenv("FOURSQUARE_API_KEY")
 
 	return weatherServiceKeys
 }

@@ -1,6 +1,125 @@
 package api
 
-const geoapifySearchURL = "https://api.geoapify.com/v2/place-details?features=walk_10,walk_10.restaurant,radius_500,radius_500.restaurant"
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"weatherservice"
+)
+
+const geoapifySearchURL = "https://api.geoapify.com/v2/place-details?"
+
+type GeoapifyAPI struct {
+	client *http.Client
+	key    string
+}
+
+func NewGeoapifyAPI(key string) *GeoapifyAPI {
+	return &GeoapifyAPI{
+		client: http.DefaultClient,
+		key:    key,
+	}
+}
+
+func (api *GeoapifyAPI) FetchReportData(ctx context.Context, categories ...string) (*weatherservice.DataToReport[weatherservice.Coordinates], error) {
+	if api.client == nil {
+		return nil, fmt.Errorf("client not initialized")
+	}
+
+	categoriesWithLonLat := strings.Split(categories[0], ",")
+	categoriesWithoutLonLat := categoriesWithLonLat[2:]
+
+	categoriesToSearch := api.filterCategories(categoriesWithoutLonLat)
+
+	queryParams := url.Values{}
+	queryParams.Add("apiKey", api.key)
+	queryParams.Add("lon", categoriesWithLonLat[0])
+	queryParams.Add("lat", categoriesWithLonLat[1])
+	//queryParams.Add("id", "id%3D514d368a517c511e40594bfd7b574ec84740f00103f90135335d1c00000000920313416e61746f6d697363686573204d757365756d")
+	queryParams.Add("features", categoriesToSearch)
+
+	apiUrl := fmt.Sprintf("%s%s", geoapifySearchURL, queryParams.Encode())
+
+	resp, err := api.client.Get(apiUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+		return nil, fmt.Errorf("failed to fetch data from geoapify: %s, because: %s", resp.Status, string(body))
+	}
+
+	var geoapifyResponse GeoapifyResponse
+	err = json.NewDecoder(resp.Body).Decode(&geoapifyResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(geoapifyResponse)
+
+	return &weatherservice.DataToReport[weatherservice.Coordinates]{
+		Data: weatherservice.Coordinates{
+			CoordinatesWithName: []weatherservice.CoordinatesWithName{
+				{
+					Name:        "Geoapify",
+					Coordinates: []interface{}{},
+				},
+			},
+		},
+	}, nil
+
+}
+
+func (api *GeoapifyAPI) FetchGeneralInfo(ctx context.Context, city ...string) (*weatherservice.DataToReport[weatherservice.Coordinates], error) {
+	return nil, nil
+}
+
+func (api *GeoapifyAPI) filterCategories(categories []string) string {
+	filteredCategories := []string{}
+
+	for _, category := range categories {
+		// Get individual features for this category
+		features := api.availableCategories(category)
+		filteredCategories = append(filteredCategories, features...)
+	}
+
+	return strings.Join(filteredCategories, ",")
+}
+
+func (api *GeoapifyAPI) availableCategories(category string) []string {
+	switch category {
+	case "restaurants":
+		return []string{
+			"radius_1000.restaurant",
+		}
+	case "tourism":
+		return []string{
+			"radius_1000.tourism",
+		}
+	case "entertainment":
+		return []string{
+			"radius_1000.entertainment",
+		}
+	case "parks":
+		return []string{
+			"radius_1000.park",
+		}
+	case "playground":
+		return []string{
+			"radius_1000.playground",
+		}
+	default:
+		return []string{}
+	}
+}
 
 type GeoapifyResponse struct {
 	Type     string    `json:"type"`

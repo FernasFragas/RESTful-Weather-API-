@@ -11,6 +11,7 @@ const port = ":8080"
 func main() {
 
 	weatherServiceSecrets := weatherservice.LoadEnvKey()
+	coordinatesReporter := weatherservice.NewCoordinatesReporter(api.NewFoursquareAPI(weatherServiceSecrets.FoursquareAPIKey))
 
 	reporters := weatherservice.NewWeatherReporters(
 		api.NewWeatherAPI(weatherServiceSecrets.OpenWeatherAPIKey),
@@ -26,8 +27,8 @@ func main() {
 		api.NewYoutubeAPI(weatherServiceSecrets.YoutubeAPIKey),
 	)
 
-	server := weatherservice.NewAppServer(reporters, videoStreamReporters, hotelsApi)
-	if err := server.InitializeDatabase("/data/weatherservice.db"); err != nil {
+	server := weatherservice.NewAppServer(reporters, videoStreamReporters, hotelsApi, coordinatesReporter)
+	if err := server.InitializeDatabase("weatherservice.db"); err != nil {
 		log.Fatal(err)
 	}
 

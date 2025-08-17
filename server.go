@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/gofiber/contrib/fgprof"
 	"github.com/gofiber/fiber/v2"
@@ -24,6 +25,15 @@ type Server struct {
 	weatherReporters     Reporter[GeneralWeatherInfo]
 	videoStreamReporters Reporter[VideosStream]
 	hotelsApi            Reporter[Hotels]
+	itenaryReporter      Reporter[Coordinates]
+}
+
+type TemplateData struct {
+	Query          string
+	Videos         VideosStream
+	GeneralInfo    GeneralWeatherInfo
+	Hotels         Hotels
+	ItineraryItems *Coordinates
 }
 
 var store = session.New()
@@ -34,7 +44,7 @@ func init() {
 	gob.Register(GeneralWeatherInfo{})
 }
 
-func NewAppServer(weatherReporters Reporter[GeneralWeatherInfo], videoStreamReporters Reporter[VideosStream], hotelsApi Reporter[Hotels]) *Server {
+func NewAppServer(weatherReporters Reporter[GeneralWeatherInfo], videoStreamReporters Reporter[VideosStream], hotelsApi Reporter[Hotels], itenaryReporter Reporter[Coordinates]) *Server {
 	app := fiber.New(fiber.Config{
 		Views: html.New("./views", ".go.tpl"),
 	})
@@ -56,6 +66,7 @@ func NewAppServer(weatherReporters Reporter[GeneralWeatherInfo], videoStreamRepo
 		weatherReporters:     weatherReporters,
 		videoStreamReporters: videoStreamReporters,
 		hotelsApi:            hotelsApi,
+		itenaryReporter:      itenaryReporter,
 	}
 
 	// Serve static files from the "public" directory
@@ -64,6 +75,8 @@ func NewAppServer(weatherReporters Reporter[GeneralWeatherInfo], videoStreamRepo
 	app.Get("/", server.listGeneralInfo)
 
 	app.Get("/process-form/", server.listGeneralInfo)
+
+	app.Post("/generate-itinerary", server.generateItinerary)
 
 	return server
 }
@@ -75,13 +88,6 @@ func (s *Server) InitializeDatabase(dbPath string) error {
 
 func (s *Server) Listen(port string) error {
 	return s.app.Listen(port)
-}
-
-type TemplateData struct {
-	Query       string
-	Videos      VideosStream
-	GeneralInfo GeneralWeatherInfo
-	Hotels      Hotels
 }
 
 func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
@@ -125,10 +131,11 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 
 	// Render the full page for regular requests
 	return ctx.Render("index", fiber.Map{
-		"Query":       city,
-		"GeneralInfo": data.GeneralInfo,
-		"Videos":      data.Videos,
-		"Hotels":      data.Hotels,
+		"Query":          city,
+		"GeneralInfo":    data.GeneralInfo,
+		"Videos":         data.Videos,
+		"Hotels":         data.Hotels,
+		"ItineraryItems": data.ItineraryItems,
 	})
 }
 
@@ -202,4 +209,87 @@ func (s *Server) retireveFreshInformation(ctx *fiber.Ctx, generalInfo *GeneralWe
 	}
 
 	return data, nil
+}
+
+func (s *Server) generateItinerary(ctx *fiber.Ctx) error {
+	// Get form data
+	city := ctx.FormValue("city_itenary")
+	startDate := ctx.FormValue("start_date")
+	endDate := ctx.FormValue("end_date")
+
+	// Get selected categories (multiple values)
+	// For checkboxes with the same name, we need to get all values
+	var categories []string
+	formData := ctx.Context().PostArgs()
+	formData.VisitAll(func(key, value []byte) {
+		if string(key) == "categories" {
+			categories = append(categories, string(value))
+		}
+	})
+
+	// Log the received data for debugging
+	log.Printf("Generating itinerary for city: %s", city)
+	log.Printf("Start date: %s, End date: %s", startDate, endDate)
+	log.Printf("Selected categories: %v", categories)
+
+	// Validate required fields
+	if city == "" || startDate == "" || endDate == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "City, start date, and end date are required",
+		})
+	}
+
+	// Fetch general info to get lon/lat coordinates
+	var generalInfo TemplateData
+	if data, err := s.checkDatabase(city); err != nil {
+		log.Printf("Error checking database for city %s while generating itinerary: %v", city, err)
+		log.Printf("Fetching fresh data for city %s", city)
+
+		data, err := s.weatherReporters.GenerateReport(ctx.Context(), city)
+		if err != nil {
+			log.Printf("Error fetching general info for city %s: %v", city, err)
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to fetch city information",
+			})
+		}
+
+		generalInfo = TemplateData{
+			GeneralInfo: *data,
+		}
+	} else {
+		generalInfo = data
+	}
+
+	if len(categories) == 0 {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "At least one category must be selected",
+		})
+	}
+
+	// Here you can use your ItenaryReporter to generate the itinerary
+	// For now, let's create a simple response and log it
+	log.Printf("Itinerary data: city=%s, startDate=%s, endDate=%s, categories=%v",
+		city, startDate, endDate, categories)
+
+	categoriesToSearch := fmt.Sprintf("%f,%f", generalInfo.GeneralInfo.Lon, generalInfo.GeneralInfo.Lat) + "," + strings.Join(categories, ",")
+
+	itenary, err := s.itenaryReporter.GenerateReport(ctx.Context(), categoriesToSearch)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to generate itinerary",
+		})
+	}
+
+	// Check if it's an HTMX request
+	if ctx.Get("HX-Request") == "true" {
+		// Return only the itinerary section for HTMX requests
+		return ctx.Render("itinerary_card", fiber.Map{
+			"Query":          city,
+			"GeneralInfo":    generalInfo.GeneralInfo,
+			"ItineraryItems": itenary,
+		})
+	}
+
+	// For non-HTMX requests, redirect back to main page
+	return ctx.Redirect("/?city_name=" + city)
 }
