@@ -23,3 +23,5 @@ pkg/
 Thumbs.db
 
 .env
+
+.cursorrules
