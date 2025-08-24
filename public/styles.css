@@ -658,3 +658,335 @@ body {
 .map-toggle-btn:hover {
     background: #0056b3;
 }
+
+/* Responsive Itinerary Form Styles */
+.itinerary-form-section {
+    background: rgba(0,0,0,0.03);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.itinerary-title {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.8);
+    font-weight: 600;
+}
+
+.itinerary-form {
+    width: 100%;
+}
+
+/* Date Row Responsive */
+.date-row {
+    margin-bottom: 1.5rem;
+}
+
+.date-row .form-group {
+    margin-bottom: 0;
+}
+
+.date-row .form-label {
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.7);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.date-row .form-control {
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.date-row .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+
+.date-row .btn-primary {
+    background: #007bff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    min-height: 42px; /* Match input height */
+}
+
+.date-row .btn-primary:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+/* Categories Row Responsive */
+.categories-row {
+    margin-bottom: 1rem;
+}
+
+.categories-row .form-label {
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.7);
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.categories-checkboxes {
+    width: 100%;
+}
+
+.categories-checkboxes .form-check {
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+}
+
+.categories-checkboxes .form-check-input {
+    margin-left: -1.5rem;
+    margin-top: 0.125rem;
+}
+
+.categories-checkboxes .form-check-label {
+    color: rgba(0, 0, 0, 0.8) !important;
+    font-weight: 400;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.categories-checkboxes .form-check-label:hover {
+    color: #007bff !important;
+}
+
+/* Loading Indicator */
+#itinerary-loading {
+    margin-top: 1rem;
+    padding: 1rem;
+    color: #007bff;
+    font-weight: 500;
+}
+
+#itinerary-loading i {
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 576px) {
+    .itinerary-form-section {
+        padding: 1rem;
+        margin: 0.5rem;
+    }
+    
+    .date-row .btn-primary {
+        margin-top: 0.5rem;
+    }
+    
+    .categories-checkboxes .col-6 {
+        margin-bottom: 0.5rem;
+    }
+}
+
+@media (min-width: 577px) and (max-width: 768px) {
+    .itinerary-form-section {
+        padding: 1.25rem;
+    }
+    
+    .categories-checkboxes .col-sm-4 {
+        margin-bottom: 0.75rem;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 992px) {
+    .itinerary-form-section {
+        padding: 1.5rem;
+    }
+}
+
+@media (min-width: 993px) {
+    .itinerary-form-section {
+        padding: 2rem;
+    }
+    
+    .categories-checkboxes .col-lg-2 {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Accessibility Improvements */
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .itinerary-form-section {
+        border: 2px solid rgba(0, 0, 0, 0.2);
+    }
+    
+    .form-control {
+        border-width: 2px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .btn-primary,
+    .form-check-label {
+        transition: none;
+    }
+}
+
+/* Map container styles */
+.itinerary-map {
+    height: 400px;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+/* Ensure map tiles load properly */
+.leaflet-container {
+    z-index: 1;
+}
+
+/* Responsive map */
+@media (max-width: 768px) {
+    .itinerary-map {
+        height: 300px;
+    }
+}
+
+/* Section Header Styles - Centered across all screen sizes */
+.section-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 1rem 0;
+}
+
+.section-header h2 {
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.8);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.section-header h2 i {
+    font-size: 0.9em;
+    color: #007bff;
+}
+
+.section-subtitle {
+    font-size: clamp(1rem, 3vw, 1.2rem);
+    color: rgba(0, 0, 0, 0.6);
+    font-weight: 400;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Enhanced Itinerary Title Styles */
+.itinerary-title {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.8);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+}
+
+/* Responsive adjustments for better centering */
+@media (max-width: 576px) {
+    .section-header {
+        margin-bottom: 1.5rem;
+        padding: 0.75rem 0;
+    }
+    
+    .section-header h2 {
+        font-size: 1.6rem;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .section-subtitle {
+        font-size: 0.95rem;
+        padding: 0 0.5rem;
+    }
+    
+    .itinerary-title {
+        font-size: 1.4rem;
+        padding: 0 0.5rem;
+    }
+}
+
+@media (min-width: 577px) and (max-width: 768px) {
+    .section-header {
+        margin-bottom: 1.75rem;
+    }
+    
+    .section-header h2 {
+        font-size: 2rem;
+    }
+    
+    .section-subtitle {
+        font-size: 1.1rem;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 992px) {
+    .section-header h2 {
+        font-size: 2.2rem;
+    }
+    
+    .section-subtitle {
+        font-size: 1.15rem;
+    }
+}
+
+@media (min-width: 993px) {
+    .section-header {
+        margin-bottom: 2.5rem;
+    }
+    
+    .section-header h2 {
+        font-size: 2.5rem;
+    }
+    
+    .section-subtitle {
+        font-size: 1.2rem;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .section-header h2,
+    .itinerary-title {
+        color: rgba(0, 0, 0, 0.9);
+    }
+    
+    .section-subtitle {
+        color: rgba(0, 0, 0, 0.7);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .section-header h2 i {
+        transition: none;
+    }
+}

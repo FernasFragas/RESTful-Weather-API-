@@ -110,6 +110,7 @@ func (api *FoursquareAPI) filterCategories(categories []string) string {
 }
 
 func (api *FoursquareAPI) availableCategories(category string) []string {
+	category = strings.ToLower(category)
 	switch category {
 	case "restaurants":
 		return []string{
