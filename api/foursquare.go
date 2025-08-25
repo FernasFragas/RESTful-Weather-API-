@@ -34,6 +34,7 @@ func (api *FoursquareAPI) FetchReportData(ctx context.Context, categories ...str
 	categoriesWithLonLat := strings.Split(categories[0], ",")
 	categoriesWithoutLonLat := categoriesWithLonLat[2:]
 
+	// todo make request per category and then save in a map
 	categoriesToSearchIDs := api.filterCategories(categoriesWithoutLonLat)
 
 	queryParams := url.Values{}
@@ -100,6 +101,8 @@ func (api *FoursquareAPI) FetchGeneralInfo(ctx context.Context, city ...string) 
 func (api *FoursquareAPI) filterCategories(categories []string) string {
 	filteredCategories := []string{}
 
+	// make request per category and then save in a map
+
 	for _, category := range categories {
 		// Get individual features for this category
 		features := api.availableCategories(category)
@@ -112,20 +115,20 @@ func (api *FoursquareAPI) filterCategories(categories []string) string {
 func (api *FoursquareAPI) availableCategories(category string) []string {
 	category = strings.ToLower(category)
 	switch category {
-	case "restaurants":
+	case "restaurants", "nightlife":
 		return []string{
 			"13065", // Restaurant
 			"13003", // Bar
 			"13002", // Fast Food
 			"13032", // Coffee Shop
 		}
-	case "tourism":
+	case "tourism", "culture", "art":
 		return []string{
 			"16000", // Landmarks and Outdoors
 			"12000", // Arts and Entertainment
 			"10000", // Events
 		}
-	case "entertainment":
+	case "entertainment", "sports":
 		return []string{
 			"12000", // Arts and Entertainment
 			"12001", // Aquarium
@@ -147,7 +150,7 @@ func (api *FoursquareAPI) availableCategories(category string) []string {
 			"17002", // Antique Store
 			"17003", // Arts and Crafts Store
 		}
-	case "outdoor":
+	case "outdoor", "nature", "parks":
 		return []string{
 			"16000", // Landmarks and Outdoors
 			"16001", // Beach
