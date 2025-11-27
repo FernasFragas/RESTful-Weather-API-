@@ -91,12 +91,7 @@
                     <!-- Hotels Section -->
                     <div class="col-12 mb-1">
                         {{ template "hotels_card" . }}
-                    </div>
-
-                    <!-- Itinerary Section -->
-                    <div class="col-12 mb-1">
-                        {{ template "itinerary_card" . }}
-                    </div>
+                    </div> 
 
                     <!-- Footer Section -->
                     <footer class="col-12 site-footer">
