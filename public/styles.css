@@ -47,13 +47,17 @@ body {
 }
 
 .form-container form {
-    display: flex;
-    gap: 10px;
     width: 100%;
 }
 
+.form-container form .row {
+    width: 100%;
+    margin: 0;
+}
+
 /* Input styles for dark glass */
-.form-container input[type="text"].form-control {
+.form-container input[type="text"].form-control,
+.form-container select.form-control {
     flex: 1;
     padding: 10px;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -65,6 +69,16 @@ body {
 
 .form-container input[type="text"].form-control::placeholder {
     color: rgba(240, 240, 240, 0.7) !important; /* Lighter placeholder */
+}
+
+.form-container select.form-control option {
+    background: rgba(0, 0, 0, 0.8);
+    color: #f0f0f0;
+}
+
+.form-container select.form-control:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Button styles for dark glass */

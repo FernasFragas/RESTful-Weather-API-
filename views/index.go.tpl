@@ -62,15 +62,115 @@
                         <form hx-get="/process-form/" 
                               hx-target="#content-area" 
                               hx-swap="innerHTML" 
-                              hx-indicator=".htmx-indicator">
-                            <input type="text" name="city_name" placeholder="Search like Lisbon, Portugal" id="city_name" class="form-control" required>
-                            <input type="submit" value="Search" class="btn btn-primary">
-                            <span class="htmx-indicator ms-2">
-                                <i class="fas fa-spinner fa-spin"></i>
-                            </span>
+                              hx-indicator=".htmx-indicator"
+                              id="search-form">
+                            <div class="row g-2">
+                                <div class="col-12 col-md-5">
+                                    <select id="country" name="country" class="form-control" required>
+                                        <option value="">Select Country</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-5">
+                                    <select id="city" name="city" class="form-control" required disabled>
+                                        <option value="">Select City</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-2">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        Search
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="hidden" name="city_name" id="city_name" value="">
+                            <div class="text-center mt-2">
+                                <span class="htmx-indicator">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                                </span>
+                            </div>
                         </form>
                     </div>
                 </div>
+
+                <script>
+                    // Load countries on page load
+                    fetch('/api/countries')
+                        .then(response => response.json())
+                        .then(data => {
+                            const countrySelect = document.getElementById('country');
+                            data.countries.sort().forEach(country => {
+                                const option = document.createElement('option');
+                                option.value = country;
+                                option.textContent = country;
+                                countrySelect.appendChild(option);
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error loading countries:', error);
+                        });
+
+                    // Handle country selection
+                    document.getElementById('country').addEventListener('change', function() {
+                        const country = this.value;
+                        const citySelect = document.getElementById('city');
+                        const cityNameInput = document.getElementById('city_name');
+                        
+                        // Clear previous cities
+                        citySelect.innerHTML = '<option value="">Select City</option>';
+                        citySelect.disabled = true;
+                        cityNameInput.value = '';
+                        
+                        if (country) {
+                            // Load cities for selected country
+                            fetch(`/api/cities?country=${encodeURIComponent(country)}`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    citySelect.innerHTML = '<option value="">Select City</option>';
+                                    data.cities.sort().forEach(city => {
+                                        const option = document.createElement('option');
+                                        option.value = city;
+                                        option.textContent = city;
+                                        citySelect.appendChild(option);
+                                    });
+                                    citySelect.disabled = false;
+                                })
+                                .catch(error => {
+                                    console.error('Error loading cities:', error);
+                                });
+                        }
+                    });
+
+                    // Handle city selection
+                    document.getElementById('city').addEventListener('change', function() {
+                        const country = document.getElementById('country').value;
+                        const city = this.value;
+                        const cityNameInput = document.getElementById('city_name');
+                        
+                        if (country && city) {
+                            // Format: "City, Country" as expected by the server
+                            cityNameInput.value = `${city}, ${country}`;
+                        } else {
+                            cityNameInput.value = '';
+                        }
+                    });
+
+                    // Handle form submission - ensure city_name is set
+                    document.getElementById('search-form').addEventListener('submit', function(e) {
+                        const country = document.getElementById('country').value;
+                        const city = document.getElementById('city').value;
+                        const cityNameInput = document.getElementById('city_name');
+                        
+                        if (!country || !city) {
+                            e.preventDefault();
+                            alert('Please select both country and city');
+                            return false;
+                        }
+                        
+                        // Ensure city_name is set before submission
+                        if (!cityNameInput.value) {
+                            cityNameInput.value = `${city}, ${country}`;
+                        }
+                    });
+                </script>
 
                 <!-- Content Area to be updated by HTMX -->
                 <div id="content-area" class="col-12">
