@@ -135,10 +135,11 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 
 	// Render the full page for regular requests
 	return ctx.Render("index", fiber.Map{
-		"Query":       city,
-		"GeneralInfo": data.GeneralInfo,
-		"Videos":      data.Videos,
-		"Hotels":      data.Hotels,
+		"Query":          city,
+		"GeneralInfo":    data.GeneralInfo,
+		"Videos":         data.Videos,
+		"Hotels":         data.Hotels,
+		"ItineraryItems": data.ItineraryItems,
 	})
 }
 

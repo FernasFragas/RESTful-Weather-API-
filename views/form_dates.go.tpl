@@ -17,6 +17,6 @@
             <div class="form-group d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100">Generate Itinerary</button>
             </div>
-    </div>
+        </div>
     </div>
 </div>
