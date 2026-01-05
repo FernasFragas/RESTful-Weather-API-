@@ -76,10 +76,6 @@ func NewAppServer(weatherReporters Reporter[GeneralWeatherInfo], videoStreamRepo
 
 	app.Get("/process-form/", server.listGeneralInfo)
 
-	app.Get("/api/countries", server.getCountries)
-
-	app.Get("/api/cities", server.getCitiesByCountry)
-
 	app.Post("/generate-itinerary", server.generateItinerary)
 
 	return server
@@ -295,39 +291,4 @@ func (s *Server) generateItinerary(ctx *fiber.Ctx) error {
 
 	// For non-HTMX requests, redirect back to main page
 	return ctx.Redirect("/?city_name=" + city)
-}
-
-func (s *Server) getCountries(ctx *fiber.Ctx) error {
-	countries, err := GetAllCountries()
-	if err != nil {
-		log.Printf("Error getting countries: %v", err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to get countries",
-		})
-	}
-
-	return ctx.JSON(fiber.Map{
-		"countries": countries,
-	})
-}
-
-func (s *Server) getCitiesByCountry(ctx *fiber.Ctx) error {
-	country := ctx.Query("country")
-	if country == "" {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Country parameter is required",
-		})
-	}
-
-	cities, err := GetCitiesByCountry(country)
-	if err != nil {
-		log.Printf("Error getting cities for country %s: %v", country, err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to get cities",
-		})
-	}
-
-	return ctx.JSON(fiber.Map{
-		"cities": cities,
-	})
 }
