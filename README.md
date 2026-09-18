@@ -8,7 +8,7 @@ TravelTab is a one-page travel dashboard. Search for a destination such as `Lisb
 - **Wave height** for coastal destinations
 - **A live map** centred on the city
 - **Travel videos** from YouTube about what to see and do there
-- **Nearby hotels** with rating, address, photos, reviews and links
+- **Nearby hotels** with rating, address, photos, reviews and links (removed for now)
 
 When no city is given, the page opens on Lisbon, Portugal.
 
