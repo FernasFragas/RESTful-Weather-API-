@@ -1,5 +1,5 @@
 # ---------- Build Stage ----------
-    FROM debian:bullseye AS builder
+    FROM debian:bookworm AS builder
 
     # Install dependencies
     RUN apt-get update && apt-get install -y wget tar gcc libc6-dev ca-certificates
@@ -24,7 +24,7 @@
     RUN go build -o /app/bin/app ./cmd/web
     
     # ---------- Final Stage ----------
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y ca-certificates libsqlite3-0 && rm -rf /var/lib/apt/lists/*
 
