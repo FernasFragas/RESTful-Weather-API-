@@ -98,7 +98,7 @@ func (s *Server) listGeneralInfo(ctx *fiber.Ctx) error {
 
 	generalInfo, err := s.weatherReporters.GenerateReport(ctx.Context(), cityAndCountry)
 	if err != nil {
-		log.Printf("Error Retriving New Weather data information", err)
+		log.Printf("Error Retriving New Weather data information with error %s", err)
 		return ctx.SendStatus(fiber.StatusInternalServerError)
 	}
 

@@ -134,11 +134,19 @@ func (api *WeatherAPI) fetchCoordinates(ctx context.Context, city string, countr
 		_ = resp.Body.Close()
 	}()
 
+	if err := checkResponse(resp); err != nil {
+		return nil, err
+	}
+
 	var coordinates GeocodingResponse
 
 	err = json.NewDecoder(resp.Body).Decode(&coordinates)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(coordinates) == 0 {
+		return nil, fmt.Errorf("no location found for %s, %s", city, country)
 	}
 
 	return &Coordinates{
@@ -167,6 +175,10 @@ func (api *WeatherAPI) fetchWeather(ctx context.Context, coordinates Coordinates
 		_ = resp.Body.Close()
 	}()
 
+	if err := checkResponse(resp); err != nil {
+		return nil, err
+	}
+
 	var weather weatherData
 
 	err = json.NewDecoder(resp.Body).Decode(&weather)
@@ -175,6 +187,20 @@ func (api *WeatherAPI) fetchWeather(ctx context.Context, coordinates Coordinates
 	}
 
 	return &weather, nil
+}
+
+// checkResponse turns a non-200 OpenWeather response into an error carrying the API's message.
+func checkResponse(resp *http.Response) error {
+	if resp.StatusCode == http.StatusOK {
+		return nil
+	}
+
+	var apiErr struct {
+		Message string `json:"message"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&apiErr)
+
+	return fmt.Errorf("openweather request failed with status %d: %s", resp.StatusCode, apiErr.Message)
 }
 
 func (api *WeatherAPI) setupQueryParams(ctx context.Context, requestParams openWeatherRequestParams) (url.Values, error) {
