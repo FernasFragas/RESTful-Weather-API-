@@ -43,6 +43,10 @@ func InitDB(dataSourceName string) error {
 		return fmt.Errorf("error creating table: %w", err)
 	}
 
+	if err = createVisitsTable(); err != nil {
+		return err
+	}
+
 	log.Println("Database initialized successfully (with compressed data blob).")
 	return nil
 }
@@ -125,7 +129,7 @@ func GetCityData(city string) (string, error) {
 		// Returning error is safer if compression is expected.
 		return "", fmt.Errorf("error reading compressed data for city %s: %w", city, err)
 	}
-	defer gzReader.Close()
+	defer func() { _ = gzReader.Close() }()
 
 	decompressedJSON, err := io.ReadAll(gzReader)
 	if err != nil {
@@ -140,7 +144,10 @@ func GetCityData(city string) (string, error) {
 // CloseDB closes the database connection.
 func CloseDB() {
 	if db != nil {
-		db.Close()
+		if err := db.Close(); err != nil {
+			log.Printf("Error closing database: %v", err)
+			return
+		}
 		log.Println("Database connection closed.")
 	}
 }

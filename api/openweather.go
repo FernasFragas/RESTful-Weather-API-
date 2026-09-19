@@ -200,6 +200,11 @@ func checkResponse(resp *http.Response) error {
 	}
 	_ = json.NewDecoder(resp.Body).Decode(&apiErr)
 
+	// Proxies and outages can answer with HTML, which has no message to decode.
+	if apiErr.Message == "" {
+		apiErr.Message = http.StatusText(resp.StatusCode)
+	}
+
 	return fmt.Errorf("openweather request failed with status %d: %s", resp.StatusCode, apiErr.Message)
 }
 

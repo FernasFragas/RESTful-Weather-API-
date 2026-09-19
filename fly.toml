@@ -8,6 +8,9 @@ primary_region = 'mad'
 
 [build]
 
+[env]
+  DB_PATH = "/data/weatherservice.db"
+
 [http_service]
   internal_port = 8080
   force_https = true

@@ -3,6 +3,7 @@ package weatherservice
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 )
@@ -155,7 +156,9 @@ func (s *HotelsApi) GenerateReport(ctx context.Context, city string) (*Hotels, e
 			wg.Add(1)
 			go func(pic string) {
 				defer wg.Done()
-				s.retrieveHotelPhotos(ctx, pic, hotelsPhotos)
+				if err := s.retrieveHotelPhotos(ctx, pic, hotelsPhotos); err != nil {
+					log.Printf("Error retrieving photos for %s: %v", pic, err)
+				}
 			}(photo)
 		}
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"weatherservice"
 	"weatherservice/api"
 )
@@ -27,8 +28,14 @@ func main() {
 		api.NewYoutubeAPI(weatherServiceSecrets.YoutubeAPIKey),
 	)
 
+	// DB_PATH should point at the mounted volume in production so data survives deploys.
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "weatherservice.db"
+	}
+
 	server := weatherservice.NewAppServer(reporters, videoStreamReporters, hotelsApi, coordinatesReporter)
-	if err := server.InitializeDatabase("weatherservice.db"); err != nil {
+	if err := server.InitializeDatabase(dbPath); err != nil {
 		log.Fatal(err)
 	}
 

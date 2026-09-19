@@ -2,15 +2,25 @@ package weatherservice
 
 import (
 	"context"
-	"encoding/json"
+	"database/sql"
 	"errors"
+	"io"
+	"log"
+	"net"
+	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/valyala/fasthttp"
 	"go.uber.org/mock/gomock"
 )
 
@@ -105,50 +115,26 @@ func (mr *MockHotelsReporterMockRecorder) GenerateReport(ctx, localization inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateReport", reflect.TypeOf((*MockHotelsReporter)(nil).GenerateReport), ctx, localization)
 }
 
-// Database interface for mocking
-type DatabaseService interface {
-	GetCityData(city string) (string, error)
-	SaveCityData(city string, data map[string]any) error
-}
+// hotelsQuery is how retireveFreshInformation formats the test coordinates for the hotels reporter.
+const hotelsQuery = "38.722300,-9.139300"
 
-type MockDatabaseService struct {
-	ctrl     *gomock.Controller
-	recorder *MockDatabaseServiceMockRecorder
-}
+// TestMain gives the package one SQLite database. Tests that fetch fresh data each use their
+// own city, so a background cache save from one test never turns another test's miss into a hit.
+func TestMain(m *testing.M) {
+	dir, err := os.MkdirTemp("", "traveltab-test")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-type MockDatabaseServiceMockRecorder struct {
-	mock *MockDatabaseService
-}
+	if err := InitDB(filepath.Join(dir, "test.db")); err != nil {
+		log.Fatal(err)
+	}
 
-func NewMockDatabaseService(ctrl *gomock.Controller) *MockDatabaseService {
-	mock := &MockDatabaseService{ctrl: ctrl}
-	mock.recorder = &MockDatabaseServiceMockRecorder{mock}
-	return mock
-}
+	code := m.Run()
 
-func (m *MockDatabaseService) EXPECT() *MockDatabaseServiceMockRecorder {
-	return m.recorder
-}
-
-func (m *MockDatabaseService) GetCityData(city string) (string, error) {
-	ret := m.ctrl.Call(m, "GetCityData", city)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (mr *MockDatabaseServiceMockRecorder) GetCityData(city interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCityData", reflect.TypeOf((*MockDatabaseService)(nil).GetCityData), city)
-}
-
-func (m *MockDatabaseService) SaveCityData(city string, data map[string]any) error {
-	ret := m.ctrl.Call(m, "SaveCityData", city, data)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-func (mr *MockDatabaseServiceMockRecorder) SaveCityData(city, data interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveCityData", reflect.TypeOf((*MockDatabaseService)(nil).SaveCityData), city, data)
+	CloseDB()
+	_ = os.RemoveAll(dir)
+	os.Exit(code)
 }
 
 // Test helper functions
@@ -157,7 +143,7 @@ func createTestServer(ctrl *gomock.Controller) (*Server, *MockWeatherReporter, *
 	mockVideos := NewMockVideoStreamReporter(ctrl)
 	mockHotels := NewMockHotelsReporter(ctrl)
 
-	server := NewAppServer(mockWeather, mockVideos, mockHotels)
+	server := NewAppServer(mockWeather, mockVideos, mockHotels, nil)
 	return server, mockWeather, mockVideos, mockHotels
 }
 
@@ -179,6 +165,12 @@ func createTestGeneralWeatherInfo() *GeneralWeatherInfo {
 		Lat:      38.7223,
 		EmbedURL: "https://embed.waze.com/iframe?zoom=10&lat=38.7223&lon=-9.1393",
 	}
+}
+
+func createTestGeneralWeatherInfoFor(city string) *GeneralWeatherInfo {
+	generalInfo := createTestGeneralWeatherInfo()
+	generalInfo.City = city
+	return generalInfo
 }
 
 func createTestVideosStream() *VideosStream {
@@ -207,6 +199,58 @@ func createTestHotels() *Hotels {
 	}
 }
 
+func videosQuery(city string) string {
+	return "Turistic places in " + city + ", portugal"
+}
+
+// expectFreshData sets up the videos and hotels reporters for one cache miss on city.
+func expectFreshData(mockVideos *MockVideoStreamReporter, mockHotels *MockHotelsReporter, city string) {
+	mockVideos.EXPECT().GenerateReport(gomock.Any(), videosQuery(city)).Return(createTestVideosStream(), nil)
+	mockHotels.EXPECT().GenerateReport(gomock.Any(), hotelsQuery).Return(createTestHotels(), nil)
+}
+
+// doRequest sends req through the server's real routes and returns the status and body.
+func doRequest(t *testing.T, server *Server, req *http.Request) (int, string) {
+	t.Helper()
+
+	resp, err := server.app.Test(req, 5000)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return resp.StatusCode, string(body)
+}
+
+// waitForCache waits for the background save started by retireveFreshInformation.
+func waitForCache(t *testing.T, city string) {
+	t.Helper()
+
+	require.Eventually(t, func() bool {
+		_, err := GetCityData(city)
+		return err == nil
+	}, 2*time.Second, 10*time.Millisecond, "city %s was never cached", city)
+}
+
+// forgetCity removes city from the cache so the test starts with a cache miss, even when
+// the tests run more than once with -count.
+func forgetCity(t *testing.T, city string) {
+	t.Helper()
+
+	_, err := db.Exec(`DELETE FROM city_data WHERE city = ?`, strings.ToLower(city))
+	require.NoError(t, err)
+}
+
+// callRetrieveFreshInformation runs retireveFreshInformation outside of a real request.
+func callRetrieveFreshInformation(server *Server, generalInfo *GeneralWeatherInfo) (TemplateData, error) {
+	app := fiber.New()
+	ctx := app.AcquireCtx(&fasthttp.RequestCtx{})
+	defer app.ReleaseCtx(ctx)
+
+	return server.retireveFreshInformation(ctx, generalInfo, generalInfo.City)
+}
+
 // Tests for NewAppServer
 func TestNewAppServer(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -216,7 +260,7 @@ func TestNewAppServer(t *testing.T) {
 	mockVideos := NewMockVideoStreamReporter(ctrl)
 	mockHotels := NewMockHotelsReporter(ctrl)
 
-	server := NewAppServer(mockWeather, mockVideos, mockHotels)
+	server := NewAppServer(mockWeather, mockVideos, mockHotels, nil)
 
 	assert.NotNil(t, server)
 	assert.NotNil(t, server.app)
@@ -227,31 +271,72 @@ func TestNewAppServer(t *testing.T) {
 
 // Tests for InitializeDatabase
 func TestInitializeDatabase(t *testing.T) {
+	// InitializeDatabase replaces the package database, so put the shared one back afterwards.
+	shared := db
+	t.Cleanup(func() { db = shared })
+
 	server := &Server{}
 
-	// Test successful initialization
-	err := server.InitializeDatabase(":memory:")
-	assert.NoError(t, err)
+	path := filepath.Join(t.TempDir(), "init.db")
 
-	// Test with invalid path (this should fail)
-	err = server.InitializeDatabase("/invalid/path/that/does/not/exist.db")
+	require.NoError(t, server.InitializeDatabase(path))
+	for _, table := range []string{"city_data", "visits"} {
+		var name string
+		err := db.QueryRow(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`, table).Scan(&name)
+		assert.NoError(t, err, "table %s should exist", table)
+	}
+	CloseDB()
+
+	// Every deploy reopens the existing file on the volume.
+	require.NoError(t, server.InitializeDatabase(path))
+	CloseDB()
+
+	err := server.InitializeDatabase("/invalid/path/that/does/not/exist.db")
 	assert.Error(t, err)
+	CloseDB()
 }
 
 // Tests for Listen
 func TestListen(t *testing.T) {
 	server := &Server{
-		app: fiber.New(),
+		app: fiber.New(fiber.Config{DisableStartupMessage: true}),
 	}
 
-	// Test with valid port
+	address := make(chan string, 1)
+	server.app.Hooks().OnListen(func(data fiber.ListenData) error {
+		address <- net.JoinHostPort(data.Host, data.Port)
+		return nil
+	})
+
+	listenErr := make(chan error, 1)
 	go func() {
-		err := server.Listen(":0") // Use port 0 to get a random available port
-		assert.NoError(t, err)
+		listenErr <- server.Listen("127.0.0.1:0")
 	}()
 
-	// The server will start successfully, but we can't easily test the actual listening
-	// without making HTTP requests, which would require more complex setup
+	var addr string
+	select {
+	case addr = <-address:
+	case err := <-listenErr:
+		t.Fatalf("Listen returned before serving: %v", err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("server never started listening")
+	}
+
+	// Getting a response proves the server is serving before it is shut down.
+	client := &http.Client{Transport: &http.Transport{DisableKeepAlives: true}, Timeout: 5 * time.Second}
+	resp, err := client.Get("http://" + addr + "/")
+	require.NoError(t, err)
+	_ = resp.Body.Close()
+	assert.Equal(t, fiber.StatusNotFound, resp.StatusCode)
+
+	require.NoError(t, server.app.Shutdown())
+
+	select {
+	case err := <-listenErr:
+		assert.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Listen did not return after Shutdown")
+	}
 }
 
 // Tests for listGeneralInfo
@@ -260,27 +345,18 @@ func TestListGeneralInfo_Success(t *testing.T) {
 	defer ctrl.Finish()
 
 	server, mockWeather, mockVideos, mockHotels := createTestServer(ctrl)
+	forgetCity(t, "Lisbon")
 
-	// Setup mocks
-	generalInfo := createTestGeneralWeatherInfo()
-	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Lisbon").Return(generalInfo, nil)
+	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Lisbon, Portugal").Return(createTestGeneralWeatherInfo(), nil)
+	expectFreshData(mockVideos, mockHotels, "Lisbon")
 
-	// Setup videos mock
-	videos := createTestVideosStream()
-	mockVideos.EXPECT().GenerateReport(gomock.Any(), "Turistic places in Lisbon, portugal").Return(videos, nil)
+	status, body := doRequest(t, server, httptest.NewRequest("GET", "/", nil))
 
-	// Setup hotels mock
-	hotels := createTestHotels()
-	mockHotels.EXPECT().GenerateReport(gomock.Any(), "38.7223,-9.1393").Return(hotels, nil)
-
-	// Create test request
-	app := fiber.New()
-	app.Get("/", server.listGeneralInfo)
-	req := httptest.NewRequest("GET", "/", nil)
-	resp, err := app.Test(req)
-
-	require.NoError(t, err)
-	assert.Equal(t, 200, resp.StatusCode)
+	assert.Equal(t, fiber.StatusOK, status)
+	assert.Contains(t, body, "<html")
+	assert.Contains(t, body, "Test Video 1")
+	assert.Contains(t, body, "Test Hotel")
+	waitForCache(t, "Lisbon")
 }
 
 func TestListGeneralInfo_WithCityParameter(t *testing.T) {
@@ -288,28 +364,15 @@ func TestListGeneralInfo_WithCityParameter(t *testing.T) {
 	defer ctrl.Finish()
 
 	server, mockWeather, mockVideos, mockHotels := createTestServer(ctrl)
+	forgetCity(t, "Porto")
 
-	// Setup mocks
-	generalInfo := createTestGeneralWeatherInfo()
-	generalInfo.City = "Porto"
-	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Porto").Return(generalInfo, nil)
+	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Porto").Return(createTestGeneralWeatherInfoFor("Porto"), nil)
+	expectFreshData(mockVideos, mockHotels, "Porto")
 
-	// Setup videos mock
-	videos := createTestVideosStream()
-	mockVideos.EXPECT().GenerateReport(gomock.Any(), "Turistic places in Porto, portugal").Return(videos, nil)
+	status, _ := doRequest(t, server, httptest.NewRequest("GET", "/?city_name=Porto", nil))
 
-	// Setup hotels mock
-	hotels := createTestHotels()
-	mockHotels.EXPECT().GenerateReport(gomock.Any(), "38.7223,-9.1393").Return(hotels, nil)
-
-	// Create test request with form data
-	app := fiber.New()
-	app.Get("/", server.listGeneralInfo)
-	req := httptest.NewRequest("GET", "/?city_name=Porto", nil)
-	resp, err := app.Test(req)
-
-	require.NoError(t, err)
-	assert.Equal(t, 200, resp.StatusCode)
+	assert.Equal(t, fiber.StatusOK, status)
+	waitForCache(t, "Porto")
 }
 
 func TestListGeneralInfo_HTMXRequest(t *testing.T) {
@@ -317,28 +380,20 @@ func TestListGeneralInfo_HTMXRequest(t *testing.T) {
 	defer ctrl.Finish()
 
 	server, mockWeather, mockVideos, mockHotels := createTestServer(ctrl)
+	forgetCity(t, "Sintra")
 
-	// Setup mocks
-	generalInfo := createTestGeneralWeatherInfo()
-	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Lisbon").Return(generalInfo, nil)
+	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Sintra").Return(createTestGeneralWeatherInfoFor("Sintra"), nil)
+	expectFreshData(mockVideos, mockHotels, "Sintra")
 
-	// Setup videos mock
-	videos := createTestVideosStream()
-	mockVideos.EXPECT().GenerateReport(gomock.Any(), "Turistic places in Lisbon, portugal").Return(videos, nil)
-
-	// Setup hotels mock
-	hotels := createTestHotels()
-	mockHotels.EXPECT().GenerateReport(gomock.Any(), "38.7223,-9.1393").Return(hotels, nil)
-
-	// Create test request with HTMX header
-	app := fiber.New()
-	app.Get("/", server.listGeneralInfo)
-	req := httptest.NewRequest("GET", "/", nil)
+	// The search form posts to /process-form/ through HTMX.
+	req := httptest.NewRequest("GET", "/process-form/?city_name=Sintra", nil)
 	req.Header.Set("HX-Request", "true")
-	resp, err := app.Test(req)
+	status, body := doRequest(t, server, req)
 
-	require.NoError(t, err)
-	assert.Equal(t, 200, resp.StatusCode)
+	assert.Equal(t, fiber.StatusOK, status)
+	assert.NotContains(t, body, "<html", "HTMX requests should only get the content fragment")
+	assert.Contains(t, body, "Test Video 1")
+	waitForCache(t, "Sintra")
 }
 
 func TestListGeneralInfo_WeatherReporterError(t *testing.T) {
@@ -347,55 +402,48 @@ func TestListGeneralInfo_WeatherReporterError(t *testing.T) {
 
 	server, mockWeather, _, _ := createTestServer(ctrl)
 
-	// Setup mock to return error
-	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Lisbon").Return(nil, errors.New("weather API error"))
+	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Lisbon, Portugal").Return(nil, errors.New("weather API error"))
 
-	// Create test request
-	app := fiber.New()
-	app.Get("/", server.listGeneralInfo)
-	req := httptest.NewRequest("GET", "/", nil)
-	resp, err := app.Test(req)
+	status, _ := doRequest(t, server, httptest.NewRequest("GET", "/", nil))
 
-	require.NoError(t, err)
-	assert.Equal(t, 200, resp.StatusCode) // Should still return 200 even with error
+	assert.Equal(t, fiber.StatusInternalServerError, status)
 }
 
-// Tests for checkDatabase (using a modified approach)
+// Tests for checkDatabase
 func TestCheckDatabase_CacheHit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	generalInfo := createTestGeneralWeatherInfo()
+	// No videos or hotels expectations: a cache hit must not call those reporters.
+	server, mockWeather, _, _ := createTestServer(ctrl)
 
-	// Create test data that would be returned from cache
-	cachedData := map[string]any{
-		"Videos": createTestVideosStream(),
-		"Hotels": createTestHotels(),
+	cached := map[string]any{
+		"GeneralInfo": createTestGeneralWeatherInfoFor("Madeira"),
+		"Videos":      VideosStream{{Title: "Cached Video", VideoID: "cached123"}},
+		"Hotels":      createTestHotels(),
 	}
-	cachedJSON, _ := json.Marshal(cachedData)
+	require.NoError(t, SaveCityData("Madeira", cached))
 
-	// Test the logic by directly calling the method with mocked data
-	// Since we can't easily mock the global functions, we'll test the logic differently
-	data := map[string]any{}
-	err := json.Unmarshal([]byte(cachedJSON), &data)
+	data, err := server.checkDatabase("Madeira")
+	require.NoError(t, err)
+	require.Len(t, data.Videos, 1)
+	assert.Equal(t, "Cached Video", data.Videos[0].Title)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, data)
-	assert.NotNil(t, data["Videos"])
-	assert.NotNil(t, data["Hotels"])
+	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Madeira").Return(createTestGeneralWeatherInfoFor("Madeira"), nil)
+	status, body := doRequest(t, server, httptest.NewRequest("GET", "/?city_name=Madeira", nil))
 
-	// Add the general info to the data
-	data["GeneralInfo"] = generalInfo
-	assert.Equal(t, generalInfo, data["GeneralInfo"])
+	assert.Equal(t, fiber.StatusOK, status)
+	assert.Contains(t, body, "Cached Video")
 }
 
 func TestCheckDatabase_CacheMiss(t *testing.T) {
-	// Test the cache miss scenario by testing the JSON unmarshaling logic
-	// Simulate cache miss by testing with empty data
-	data := map[string]any{}
+	server := &Server{}
 
-	// This represents what happens when cache miss occurs
-	assert.Empty(t, data)
+	_, err := server.checkDatabase("Atlantis")
+	assert.ErrorIs(t, err, sql.ErrNoRows)
+
+	_, err = server.checkDatabase("")
+	assert.Error(t, err)
 }
 
 // Tests for retireveFreshInformation
@@ -403,141 +451,98 @@ func TestRetireveFreshInformation_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, mockVideos, mockHotels := createTestServer(ctrl)
+	server, _, mockVideos, mockHotels := createTestServer(ctrl)
+	forgetCity(t, "Braga")
 
-	generalInfo := createTestGeneralWeatherInfo()
+	generalInfo := createTestGeneralWeatherInfoFor("Braga")
+	expectFreshData(mockVideos, mockHotels, "Braga")
 
-	// Setup videos mock
-	videos := createTestVideosStream()
-	mockVideos.EXPECT().GenerateReport(gomock.Any(), "Turistic places in Lisbon, portugal").Return(videos, nil)
+	data, err := callRetrieveFreshInformation(server, generalInfo)
 
-	// Setup hotels mock
-	hotels := createTestHotels()
-	mockHotels.EXPECT().GenerateReport(gomock.Any(), "38.7223,-9.1393").Return(hotels, nil)
-
-	// Test the data structure creation logic directly
-	data := map[string]any{
-		"GeneralInfo": generalInfo,
-		"Videos":      videos,
-		"Hotels":      hotels,
-	}
-
-	assert.NotNil(t, data)
-	assert.Equal(t, generalInfo, data["GeneralInfo"])
-	assert.Equal(t, videos, data["Videos"])
-	assert.Equal(t, hotels, data["Hotels"])
+	require.NoError(t, err)
+	assert.Equal(t, *generalInfo, data.GeneralInfo)
+	assert.Equal(t, *createTestVideosStream(), data.Videos)
+	assert.Equal(t, *createTestHotels(), data.Hotels)
+	waitForCache(t, "Braga")
 }
 
 func TestRetireveFreshInformation_VideosError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, mockVideos, mockHotels := createTestServer(ctrl)
+	server, _, mockVideos, mockHotels := createTestServer(ctrl)
+	forgetCity(t, "Aveiro")
 
-	generalInfo := createTestGeneralWeatherInfo()
+	generalInfo := createTestGeneralWeatherInfoFor("Aveiro")
+	mockVideos.EXPECT().GenerateReport(gomock.Any(), videosQuery("Aveiro")).Return(nil, errors.New("videos API error"))
+	mockHotels.EXPECT().GenerateReport(gomock.Any(), hotelsQuery).Return(createTestHotels(), nil)
 
-	// Setup videos mock to return error
-	mockVideos.EXPECT().GenerateReport(gomock.Any(), "Turistic places in Lisbon, portugal").Return(nil, errors.New("videos API error"))
+	data, err := callRetrieveFreshInformation(server, generalInfo)
 
-	// Setup hotels mock
-	hotels := createTestHotels()
-	mockHotels.EXPECT().GenerateReport(gomock.Any(), "38.7223,-9.1393").Return(hotels, nil)
-
-	// Test the error handling logic directly
-	data := map[string]any{
-		"GeneralInfo": generalInfo,
-		"Videos":      &VideosStream{}, // Should return empty videos on error
-		"Hotels":      hotels,
-	}
-
-	assert.NotNil(t, data)
-	assert.Equal(t, generalInfo, data["GeneralInfo"])
-	assert.Equal(t, &VideosStream{}, data["Videos"]) // Should return empty videos
-	assert.Equal(t, hotels, data["Hotels"])
+	// Missing videos fall back to an empty list without failing the page.
+	require.NoError(t, err)
+	assert.Empty(t, data.Videos)
+	assert.Equal(t, *createTestHotels(), data.Hotels)
+	waitForCache(t, "Aveiro")
 }
 
 func TestRetireveFreshInformation_HotelsError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, mockVideos, mockHotels := createTestServer(ctrl)
+	server, _, mockVideos, mockHotels := createTestServer(ctrl)
+	forgetCity(t, "Evora")
 
-	generalInfo := createTestGeneralWeatherInfo()
+	generalInfo := createTestGeneralWeatherInfoFor("Evora")
+	mockVideos.EXPECT().GenerateReport(gomock.Any(), videosQuery("Evora")).Return(createTestVideosStream(), nil)
+	mockHotels.EXPECT().GenerateReport(gomock.Any(), hotelsQuery).Return(nil, errors.New("hotels API error"))
 
-	// Setup videos mock
-	videos := createTestVideosStream()
-	mockVideos.EXPECT().GenerateReport(gomock.Any(), "Turistic places in Lisbon, portugal").Return(videos, nil)
+	data, err := callRetrieveFreshInformation(server, generalInfo)
 
-	// Setup hotels mock to return error
-	mockHotels.EXPECT().GenerateReport(gomock.Any(), "38.7223,-9.1393").Return(nil, errors.New("hotels API error"))
-
-	// Test the error handling logic directly
-	data := map[string]any{
-		"GeneralInfo": generalInfo,
-		"Videos":      videos,
-		"Hotels":      &Hotels{}, // Should return empty hotels on error
-	}
-
-	assert.NotNil(t, data)
-	assert.Equal(t, generalInfo, data["GeneralInfo"])
-	assert.Equal(t, videos, data["Videos"])
-	assert.Equal(t, &Hotels{}, data["Hotels"]) // Should return empty hotels
+	assert.Error(t, err)
+	assert.Equal(t, *createTestVideosStream(), data.Videos)
+	assert.Empty(t, data.Hotels)
+	waitForCache(t, "Evora")
 }
 
 func TestRetireveFreshInformation_BothErrors(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, mockVideos, mockHotels := createTestServer(ctrl)
+	server, _, mockVideos, mockHotels := createTestServer(ctrl)
+	forgetCity(t, "Leiria")
 
-	generalInfo := createTestGeneralWeatherInfo()
+	generalInfo := createTestGeneralWeatherInfoFor("Leiria")
+	mockVideos.EXPECT().GenerateReport(gomock.Any(), videosQuery("Leiria")).Return(nil, errors.New("videos API error"))
+	mockHotels.EXPECT().GenerateReport(gomock.Any(), hotelsQuery).Return(nil, errors.New("hotels API error"))
 
-	// Setup both mocks to return errors
-	mockVideos.EXPECT().GenerateReport(gomock.Any(), "Turistic places in Lisbon, portugal").Return(nil, errors.New("videos API error"))
-	mockHotels.EXPECT().GenerateReport(gomock.Any(), "38.7223,-9.1393").Return(nil, errors.New("hotels API error"))
+	data, err := callRetrieveFreshInformation(server, generalInfo)
 
-	// Test the error handling logic directly
-	data := map[string]any{
-		"GeneralInfo": generalInfo,
-		"Videos":      &VideosStream{}, // Should return empty videos on error
-		"Hotels":      &Hotels{},       // Should return empty hotels on error
-	}
-
-	assert.NotNil(t, data)
-	assert.Equal(t, generalInfo, data["GeneralInfo"])
-	assert.Equal(t, &VideosStream{}, data["Videos"])
-	assert.Equal(t, &Hotels{}, data["Hotels"])
+	assert.Error(t, err)
+	assert.Empty(t, data.Videos)
+	assert.Empty(t, data.Hotels)
+	waitForCache(t, "Leiria")
 }
 
-// Integration test for the complete flow
+// Integration test for the complete flow: the first visit fetches and caches, the second is served from the cache.
 func TestListGeneralInfo_CompleteFlow(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	server, mockWeather, mockVideos, mockHotels := createTestServer(ctrl)
+	forgetCity(t, "Coimbra")
 
-	// Setup weather mock
-	generalInfo := createTestGeneralWeatherInfo()
-	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Porto").Return(generalInfo, nil)
+	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Coimbra").Return(createTestGeneralWeatherInfoFor("Coimbra"), nil).Times(2)
+	expectFreshData(mockVideos, mockHotels, "Coimbra")
 
-	// Setup videos mock
-	videos := createTestVideosStream()
-	mockVideos.EXPECT().GenerateReport(gomock.Any(), "Turistic places in Porto, portugal").Return(videos, nil)
+	status, body := doRequest(t, server, httptest.NewRequest("GET", "/?city_name=Coimbra", nil))
+	require.Equal(t, fiber.StatusOK, status)
+	assert.Contains(t, body, "Test Hotel")
+	waitForCache(t, "Coimbra")
 
-	// Setup hotels mock
-	hotels := createTestHotels()
-	mockHotels.EXPECT().GenerateReport(gomock.Any(), "38.7223,-9.1393").Return(hotels, nil)
-
-	// Create test request
-	app := fiber.New()
-	app.Get("/", server.listGeneralInfo)
-
-	// Test with form data
-	req := httptest.NewRequest("GET", "/?city_name=Porto", nil)
-	resp, err := app.Test(req)
-
-	require.NoError(t, err)
-	assert.Equal(t, 200, resp.StatusCode)
+	status, body = doRequest(t, server, httptest.NewRequest("GET", "/?city_name=Coimbra", nil))
+	assert.Equal(t, fiber.StatusOK, status)
+	assert.Contains(t, body, "Test Hotel")
 }
 
 // Test edge cases
@@ -546,27 +551,17 @@ func TestListGeneralInfo_EmptyCityName(t *testing.T) {
 	defer ctrl.Finish()
 
 	server, mockWeather, mockVideos, mockHotels := createTestServer(ctrl)
+	forgetCity(t, "Cascais")
 
-	// Setup weather mock for default city (Lisbon)
-	generalInfo := createTestGeneralWeatherInfo()
-	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Lisbon").Return(generalInfo, nil)
+	// The reporter answers with another city so this test's cache entry stays separate from
+	// TestListGeneralInfo_Success.
+	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Lisbon, Portugal").Return(createTestGeneralWeatherInfoFor("Cascais"), nil)
+	expectFreshData(mockVideos, mockHotels, "Cascais")
 
-	// Setup videos mock
-	videos := createTestVideosStream()
-	mockVideos.EXPECT().GenerateReport(gomock.Any(), "Turistic places in Lisbon, portugal").Return(videos, nil)
+	status, _ := doRequest(t, server, httptest.NewRequest("GET", "/?city_name=", nil))
 
-	// Setup hotels mock
-	hotels := createTestHotels()
-	mockHotels.EXPECT().GenerateReport(gomock.Any(), "38.7223,-9.1393").Return(hotels, nil)
-
-	// Create test request with empty city name
-	app := fiber.New()
-	app.Get("/", server.listGeneralInfo)
-	req := httptest.NewRequest("GET", "/?city_name=", nil)
-	resp, err := app.Test(req)
-
-	require.NoError(t, err)
-	assert.Equal(t, 200, resp.StatusCode)
+	assert.Equal(t, fiber.StatusOK, status)
+	waitForCache(t, "Cascais")
 }
 
 // Test for concurrent requests
@@ -575,37 +570,36 @@ func TestListGeneralInfo_ConcurrentRequests(t *testing.T) {
 	defer ctrl.Finish()
 
 	server, mockWeather, mockVideos, mockHotels := createTestServer(ctrl)
+	forgetCity(t, "Faro")
 
-	// Setup mocks to handle multiple calls
-	generalInfo := createTestGeneralWeatherInfo()
-	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Lisbon").Return(generalInfo, nil).Times(3)
+	// Fiber fills its render key list lazily on an app's first render, which races when the
+	// first renders are concurrent (still true in Fiber v2.52.15). Rendering a cached page
+	// first keeps this test about the app's own concurrency.
+	require.NoError(t, SaveCityData("Tavira", map[string]any{"GeneralInfo": createTestGeneralWeatherInfoFor("Tavira")}))
+	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Tavira").Return(createTestGeneralWeatherInfoFor("Tavira"), nil)
+	status, _ := doRequest(t, server, httptest.NewRequest("GET", "/?city_name=Tavira", nil))
+	require.Equal(t, fiber.StatusOK, status)
 
-	// Setup videos mock
-	videos := createTestVideosStream()
-	mockVideos.EXPECT().GenerateReport(gomock.Any(), "Turistic places in Lisbon, portugal").Return(videos, nil).Times(3)
+	mockWeather.EXPECT().GenerateReport(gomock.Any(), "Faro").Return(createTestGeneralWeatherInfoFor("Faro"), nil).Times(3)
 
-	// Setup hotels mock
-	hotels := createTestHotels()
-	mockHotels.EXPECT().GenerateReport(gomock.Any(), "38.7223,-9.1393").Return(hotels, nil).Times(3)
+	// Requests that arrive after the first save are served from the cache.
+	mockVideos.EXPECT().GenerateReport(gomock.Any(), videosQuery("Faro")).Return(createTestVideosStream(), nil).MinTimes(1).MaxTimes(3)
+	mockHotels.EXPECT().GenerateReport(gomock.Any(), hotelsQuery).Return(createTestHotels(), nil).MinTimes(1).MaxTimes(3)
 
-	// Create test app
-	app := fiber.New()
-	app.Get("/", server.listGeneralInfo)
-
-	// Test concurrent requests
-	done := make(chan bool, 3)
+	var wg sync.WaitGroup
 	for i := 0; i < 3; i++ {
+		wg.Add(1)
 		go func() {
-			req := httptest.NewRequest("GET", "/", nil)
-			resp, err := app.Test(req)
-			assert.NoError(t, err)
-			assert.Equal(t, 200, resp.StatusCode)
-			done <- true
+			defer wg.Done()
+
+			resp, err := server.app.Test(httptest.NewRequest("GET", "/?city_name=Faro", nil), 5000)
+			if assert.NoError(t, err) {
+				assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+				_ = resp.Body.Close()
+			}
 		}()
 	}
+	wg.Wait()
 
-	// Wait for all requests to complete
-	for i := 0; i < 3; i++ {
-		<-done
-	}
+	waitForCache(t, "Faro")
 }

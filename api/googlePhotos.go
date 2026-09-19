@@ -5,13 +5,13 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"sync"
 	"weatherservice"
 )
 
-const googlePlaceMapTextSearchURL = "https://places.googleapis.com/v1/places:searchText"
 const googlePhotosURL = "https://places.googleapis.com/v1/%s/media?maxHeightPx=400&maxWidthPx=400&key=%s"
 
 type GooglePhotosAPI struct {
@@ -47,7 +47,9 @@ func (api *GooglePhotosAPI) FetchReportData(ctx context.Context, hotelName ...st
 		wg.Add(1)
 		go func(hotelName string, index int, photoUrlsch chan<- hotelPhotoResult) {
 			defer wg.Done()
-			api.getImageFromGooglePlaces(hotelName, index, photoUrlsch)
+			if err := api.getImageFromGooglePlaces(hotelName, index, photoUrlsch); err != nil {
+				log.Printf("Error fetching photo for %s: %v", hotelName, err)
+			}
 		}(place, i, photoUrls)
 	}
 
@@ -127,14 +129,6 @@ type RoutingSummary struct {
 
 type ContextualContent struct {
 	// Define fields for the ContextualContent object as needed
-}
-
-type response struct {
-	Places             []Place             `json:"places"`
-	RoutingSummaries   []RoutingSummary    `json:"routingSummaries"`
-	ContextualContents []ContextualContent `json:"contextualContents"`
-	NextPageToken      string              `json:"nextPageToken"`
-	SearchUri          string              `json:"searchUri"`
 }
 
 type LocalizedText struct {

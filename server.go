@@ -72,11 +72,13 @@ func NewAppServer(weatherReporters Reporter[GeneralWeatherInfo], videoStreamRepo
 	// Serve static files from the "public" directory
 	app.Static("/", "./public")
 
-	app.Get("/", server.listGeneralInfo)
+	app.Get("/", server.trackVisit, server.listGeneralInfo)
 
-	app.Get("/process-form/", server.listGeneralInfo)
+	app.Get("/process-form/", server.trackVisit, server.listGeneralInfo)
 
 	app.Post("/generate-itinerary", server.generateItinerary)
+
+	app.Get("/stats", server.showStats)
 
 	return server
 }
